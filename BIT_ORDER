@@ -1,0 +1,20 @@
+
+Each byte is written out "abcdefgh", where a is the most significant bit and h is the least,
+     i.e. the byte has the value h*2^0 + g*2^1 + f*2^2 + e*2^3 + d*2^4 + c*2^5 + b*2^6 + a*2^7
+
+little endian ~= lsb
+big endian ~= msb0
+
+bit stream 0123456789abcdefghijklmno is stored as:
+
+Little endian, lsb0
+76543210  fedcb98  nmlkjihg vutsrqpo
+
+Little endian, msb0
+01234567  89abcdef ghijklmn opqrstuv
+
+big endian, msb0
+opqrstuv ghijklmn 89abcdef 01234567
+
+little endian, msb0
+vutsrqpo nmlkjihg fedcba98 76543210

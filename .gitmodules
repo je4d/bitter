@@ -1,3 +1,6 @@
 [submodule "modules/bandit"]
 	path = modules/bandit
 	url = https://github.com/joakimkarlsson/bandit.git
+[submodule "modules/jake"]
+	path = modules/jake
+	url = /home/jeff/dev/jake

@@ -7,17 +7,19 @@ $(eval $(call subdir_start,$(DIR)))
 
 ################################################################################
 
-#apps := bit
+includes := external/bandit
+
+apps := bit
 
 ################################################################################
 
 $(eval $(call subdir_end,$(DIR)))
 $(eval $(call target_add,$(DIR),all,apps))
 
-#$(DIR)/all: $(DIR)/test
+$(DIR)/all: $(DIR)/test
 
-#$(DIR)/test: %/test: $(apps_tgt)
-#	build/$*/bit
+$(DIR)/test: %/test: $(apps_tgt)
+	build/$*/bit
 
 DIR := $(DIR_$(DIR))
 else

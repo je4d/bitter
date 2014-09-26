@@ -120,7 +120,7 @@ void core_tests()
         }
     });
 
-/*    it("supports postincrement", []{
+    it("supports postincrement", []{
         uint8_t foo[8];
         for (std::size_t c = 0; c < sizeof(foo)/sizeof(uint8_t); ++c)
         {
@@ -129,11 +129,40 @@ void core_tests()
                 iter i1(&foo[c], b);
                 iter i2(&foo[c], b);
                 iter i3(&foo[c+(b+1)/8], (b+1)%8);
-                AssertThat(i1++, Equals(i1));
+                AssertThat(i1++, Equals(i2));
+                AssertThat(i1, Equals(i3));
+            }
+        }
+    });
+
+    it("supports predecrement", []{
+        uint8_t foo[8];
+        for (std::size_t c = 0; c < sizeof(foo)/sizeof(uint8_t); ++c)
+        {
+            for (std::size_t b = 0; b < 8; ++b)
+            {
+                iter i1(&foo[c+(b+1)/8], (b+1)%8);
+                iter i2(&foo[c], b);
+                AssertThat(--i1, Equals(i2));
                 AssertThat(i1, Equals(i2));
             }
         }
-    });*/
+    });
+
+    it("supports postdecrement", []{
+        uint8_t foo[8];
+        for (std::size_t c = 0; c < sizeof(foo)/sizeof(uint8_t); ++c)
+        {
+            for (std::size_t b = 0; b < 8; ++b)
+            {
+                iter i1(&foo[c+(b+1)/8], (b+1)%8);
+                iter i2(&foo[c+(b+1)/8], (b+1)%8);
+                iter i3(&foo[c], b);
+                AssertThat(i1--, Equals(i2));
+                AssertThat(i1, Equals(i3));
+            }
+        }
+    });
 
     it("supports equality/inequality comparison", []{
         uint8_t foo[8];

@@ -77,7 +77,7 @@ struct bit_iterator_base : std::iterator<std::random_access_iterator_tag,bit>
 
     void bump_down()
     {
-        if (!--bitno)
+        if (bitno-- == 0)
             bitno = (--byte,7);
     }
 
@@ -127,14 +127,14 @@ struct bit_iterator_impl : bit_iterator_base
     T& operator++() noexcept
     { bump_up(); return static_cast<T&>(*this); }
     T operator++(int) noexcept
-    { T ret(*this); ++*this; return ret; }
+    { T ret(static_cast<T&>(*this)); ++*this; return ret; }
     T& operator+=(std::ptrdiff_t n) noexcept
     { adjust(n); return static_cast<T&>(*this); }
 
     T& operator--() noexcept
     { bump_down(); return static_cast<T&>(*this); }
     T operator--(int) noexcept
-    { T ret(*this); --*this; return ret; }
+    { T ret(static_cast<T&>(*this)); --*this; return ret; }
     T& operator-=(std::ptrdiff_t n) noexcept
     { adjust(-n); return static_cast<T&>(*this); }
 

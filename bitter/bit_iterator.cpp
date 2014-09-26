@@ -1,7 +1,7 @@
 #include <bandit/bandit.h>
 using namespace bandit;
 
-#include "biterator.hpp"
+#include "bit_iterator.hpp"
 
 using bitvec = std::vector<bitter::bit>;
 bitvec make_bitvec(std::initializer_list<int> il)
@@ -34,7 +34,7 @@ struct ArrayDelete {
     void operator()(T*t) { delete[] t; }
 };
 
-std::string hexstring(char *data, std::size_t n)
+std::string hexstring(const std::uint8_t *data, std::size_t n)
 {
     const auto sz = (n+7)/8;
     const auto retlen = 2*sz;
@@ -51,16 +51,16 @@ std::string hexstring(char *data, std::size_t n)
 template <typename OutIt>
 std::string copy_and_hexify(const bitvec& source, std::ptrdiff_t n)
 {
-    std::vector<char> out((n+7)/8);
+    std::vector<std::uint8_t> out((n+7)/8);
     std::copy(begin(source), next(begin(source), n), OutIt(out.data(), 0));
     return hexstring(out.data(), n);
 }
 
 go_bandit([]{
-    using lsb0iter = bitter::biterator<bitter::bit_order::lsb0>;
-    using msb0iter = bitter::biterator<bitter::bit_order::msb0>;
-    using lsb0citer = bitter::const_biterator<bitter::bit_order::lsb0>;
-    using msb0citer = bitter::const_biterator<bitter::bit_order::msb0>;
+    using lsb0iter = bitter::bit_iterator<bitter::bit_order::lsb0>;
+    using msb0iter = bitter::bit_iterator<bitter::bit_order::msb0>;
+    using lsb0citer = bitter::const_bit_iterator<bitter::bit_order::lsb0>;
+    using msb0citer = bitter::const_bit_iterator<bitter::bit_order::msb0>;
     const bitvec bits16(16, bitter::bit(1));
 
     it("compares equal to self when default constructed", []{
@@ -73,7 +73,7 @@ go_bandit([]{
     });
 
     it("satisfies the examples in NIST FIPS 202", []{
-        const char* data = "\xA3";
+        const std::uint8_t data[] = {0xA3u};
         const bitvec interpreted_as_msb0 = make_bitvec({1,0,1,0, 0,0,1,1});
         const bitvec interpreted_as_lsb0 = make_bitvec({1,1,0,0, 0,1,0,1});
 
@@ -87,13 +87,13 @@ go_bandit([]{
                   back_inserter(converted_to_lsb0));
         AssertThat(converted_to_lsb0, EqualsContainer(interpreted_as_lsb0));
 
-        char data_m[] = {0,0};
+        std::uint8_t data_m[] = {0,0};
         std::copy(begin(interpreted_as_msb0), end(interpreted_as_msb0),
                   msb0iter(data_m,0));
         AssertThat(static_cast<uint8_t>(data_m[0]), Equals(0xa3));
         AssertThat(static_cast<uint8_t>(data_m[1]), Equals(0));
 
-        char data_l[] = {0,0};
+        std::uint8_t data_l[] = {0,0};
         std::copy(begin(interpreted_as_lsb0), end(interpreted_as_lsb0),
                   lsb0iter(data_l,0));
         AssertThat(static_cast<uint8_t>(data_l[0]), Equals(0xa3));

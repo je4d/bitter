@@ -10,7 +10,7 @@ $(eval $(call subdir_start,$(DIR)))
 includes := external/bandit
 
 apps := bit                                                                    \
-        biterator
+        bit_iterator
 
 ################################################################################
 
@@ -20,8 +20,8 @@ $(eval $(call target_add,$(DIR),all,apps))
 $(DIR)/all: $(DIR)/test
 
 $(DIR)/test: %/test: $(apps_tgt)
-	build/$*/bit
-	build/$*/biterator
+	build/$*/bit --reporter=spec
+	build/$*/bit_iterator --reporter=spec
 
 DIR := $(DIR_$(DIR))
 else

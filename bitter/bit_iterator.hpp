@@ -1,8 +1,9 @@
-#ifndef BITTER_BITERATOR_HPP
-#define BITTER_BITERATOR_HPP
+#ifndef BITTER_BIT_ITERATOR_HPP
+#define BITTER_BIT_ITERATOR_HPP
 
 #include "bit.hpp"
 #include "bit_order.hpp"
+#include "byte_order.hpp"
 
 #include <cstddef>
 #include <utility>
@@ -10,6 +11,8 @@
 namespace bitter {
 
 namespace detail {
+
+using std::uint8_t;
 
 template <bit_order BO>
 constexpr std::uint8_t bitidx(std::uint8_t bitno)
@@ -20,7 +23,7 @@ constexpr std::uint8_t bitidx(std::uint8_t bitno)
 struct bitref
 {
     bitref() noexcept = default;
-    bitref(char* c, std::uint8_t bitidx) noexcept : byte{c}, bitidx{bitidx} {}
+    bitref(uint8_t* c, uint8_t bitidx) noexcept : byte{c}, bitidx{bitidx} {}
 
     bitref& operator=(bit b) noexcept
     {
@@ -34,13 +37,13 @@ struct bitref
         return bit(*byte & (1<<bitidx));
     }
 private:
-    char* byte{nullptr};
-    std::uint8_t bitidx{0}; /// bitidx = n to represent the nth least
-                            /// significant bit.
-                            /// To represent the first bit in the part of a
-                            /// message held by this byte, an LSB0 iterator will
-                            /// set bitidx to 0, and an MSB0 iterator will set
-                            /// bitidx to 7.
+    uint8_t* byte{nullptr};
+    uint8_t bitidx{0}; /// bitidx = n to represent the nth least
+                       /// significant bit.
+                       /// To represent the first bit in the part of a
+                       /// message held by this byte, an LSB0 bit_iterator will
+                       /// set bitidx to 0, and an MSB0 bit_iterator will set
+                       /// bitidx to 7.
 };
 
 struct const_bitptr
@@ -58,10 +61,10 @@ private:
     bit b;
 };
 
-struct biterator_base : std::iterator<std::random_access_iterator_tag,bit>
+struct bit_iterator_base : std::iterator<std::random_access_iterator_tag,bit>
 {
-    constexpr biterator_base() noexcept = default;
-    constexpr biterator_base(char* byte, std::uint8_t bitno) noexcept :
+    constexpr bit_iterator_base() noexcept = default;
+    constexpr bit_iterator_base(uint8_t* byte, uint8_t bitno) noexcept :
         byte{byte},
         bitno{bitno}
     {}
@@ -89,36 +92,36 @@ struct biterator_base : std::iterator<std::random_access_iterator_tag,bit>
         bitno = div.rem;
     }
 
-    friend bool operator==(biterator_base a, biterator_base b) noexcept
+    friend bool operator==(bit_iterator_base a, bit_iterator_base b) noexcept
     { return a.byte == b.byte and a.bitno == b.bitno; }
-    friend bool operator!=(biterator_base a, biterator_base b) noexcept
+    friend bool operator!=(bit_iterator_base a, bit_iterator_base b) noexcept
     { return !(a==b); }
-    friend bool operator<(biterator_base a, biterator_base b) noexcept
+    friend bool operator<(bit_iterator_base a, bit_iterator_base b) noexcept
     { return (a.byte == b.byte) ? (a.bitno < b.bitno) : (a.byte < b.byte); }
-    friend bool operator<=(biterator_base a, biterator_base b) noexcept
+    friend bool operator<=(bit_iterator_base a, bit_iterator_base b) noexcept
     { return !(b < a); }
-    friend bool operator>(biterator_base a, biterator_base b) noexcept
+    friend bool operator>(bit_iterator_base a, bit_iterator_base b) noexcept
     { return b < a; }
-    friend bool operator>=(biterator_base a, biterator_base b) noexcept
+    friend bool operator>=(bit_iterator_base a, bit_iterator_base b) noexcept
     { return !(a < b); }
 
-    friend void swap(biterator_base& a, biterator_base& b) noexcept
+    friend void swap(bit_iterator_base& a, bit_iterator_base& b) noexcept
     { std::swap(a.byte, b.byte); std::swap(a.bitno, b.bitno); }
-    friend void swap(biterator_base& a, biterator_base*& b) noexcept
+    friend void swap(bit_iterator_base& a, bit_iterator_base*& b) noexcept
     { swap(a, b); }
-    friend void swap(biterator_base&& a, biterator_base& b) noexcept
+    friend void swap(bit_iterator_base&& a, bit_iterator_base& b) noexcept
     { swap(a, b); }
 
-    char* byte{0};
-    std::uint8_t bitno{0};
+    uint8_t* byte{0};
+    uint8_t bitno{0};
 };
 
 template <typename T>
-struct biterator_impl : biterator_base
+struct bit_iterator_impl : bit_iterator_base
 {
-    constexpr biterator_impl() noexcept = default;
-    constexpr biterator_impl(char* byte, std::uint8_t bitno) noexcept :
-        biterator_base{byte, bitno}
+    constexpr bit_iterator_impl() noexcept = default;
+    constexpr bit_iterator_impl(uint8_t* byte, uint8_t bitno) noexcept :
+        bit_iterator_base{byte, bitno}
     {}
 
     T& operator++() noexcept
@@ -152,18 +155,18 @@ struct biterator_impl : biterator_base
 
 } // namespace detail
 
-template <bit_order BO>
-struct biterator : detail::biterator_impl<biterator<BO>>
+template <bit_order BO, byte_order = byte_order::none>
+struct bit_iterator : detail::bit_iterator_impl<bit_iterator<BO>>
 {
-    using base      = detail::biterator_impl<biterator<BO>>;
+    using base      = detail::bit_iterator_impl<bit_iterator<BO>>;
     using reference = detail::bitref;
     using pointer   = detail::bitptr;
-    using iterator  = biterator;
+    using iterator  = bit_iterator;
 
-    constexpr biterator() noexcept
+    constexpr bit_iterator() noexcept
     {}
 
-    biterator(char* byte, std::uint8_t bitno) :
+    bit_iterator(std::uint8_t* byte, std::uint8_t bitno) :
         base{byte, bitno}
     {}
 
@@ -174,21 +177,21 @@ struct biterator : detail::biterator_impl<biterator<BO>>
     { return *(*this+n); }
 };
 
-template <bit_order BO>
-struct const_biterator : detail::biterator_impl<const_biterator<BO>>
+template <bit_order BO, byte_order = byte_order::none>
+struct const_bit_iterator : detail::bit_iterator_impl<const_bit_iterator<BO>>
 {
-    using base            = detail::biterator_impl<const_biterator<BO>>;
+    using base            = detail::bit_iterator_impl<const_bit_iterator<BO>>;
     using reference       = bit;
     using const_reference = bit;
     using pointer         = detail::const_bitptr;
     using const_pointer   = detail::const_bitptr;
-    using iterator        = const_biterator;
-    using const_iterator  = const_biterator;
+    using iterator        = const_bit_iterator;
+    using const_iterator  = const_bit_iterator;
 
-    constexpr const_biterator() noexcept = default;
+    constexpr const_bit_iterator() noexcept = default;
 
-    const_biterator(const char* byte, std::uint8_t bitno) noexcept :
-        base{const_cast<char*>(byte), bitno}
+    const_bit_iterator(const std::uint8_t* byte, std::uint8_t bitno) noexcept :
+        base{const_cast<std::uint8_t*>(byte), bitno}
     {}
 
     const_reference operator*() const noexcept
@@ -200,4 +203,4 @@ struct const_biterator : detail::biterator_impl<const_biterator<BO>>
 
 } // namespace bitter
 
-#endif // BITTER_BITERATOR_HPP
+#endif // BITTER_BIT_ITERATOR_HPP

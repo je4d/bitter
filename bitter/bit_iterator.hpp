@@ -22,6 +22,7 @@ constexpr std::uint8_t bitidx(std::uint8_t bitno)
 
 struct const_bitptr
 {
+    explicit const_bitptr(bit b) : b{b} {}
     const bit* operator->() const { return &b; }
 private:
     bit b;
@@ -29,6 +30,7 @@ private:
 
 struct bitptr
 {
+    explicit bitptr(bit b) : b{b} {}
     bit* operator->() { return &b; }
     const bit* operator->() const { return &b; }
 private:
@@ -81,7 +83,7 @@ struct bit_iterator_base : std::iterator<std::random_access_iterator_tag,bit>
 
     friend void swap(bit_iterator_base& a, bit_iterator_base& b) noexcept
     { std::swap(a.byte, b.byte); std::swap(a.bitno, b.bitno); }
-    friend void swap(bit_iterator_base& a, bit_iterator_base*& b) noexcept
+    friend void swap(bit_iterator_base& a, bit_iterator_base&& b) noexcept
     { swap(a, b); }
     friend void swap(bit_iterator_base&& a, bit_iterator_base& b) noexcept
     { swap(a, b); }
@@ -127,6 +129,8 @@ struct bit_iterator_impl : bit_iterator_base
 
 } // namespace detail
 
+/* note: bitref cannot be in the detail namespace, or functions taking a bit
+ * will not be found via ADL on a bitref argument */
 struct bitref
 {
     bitref() noexcept = default;
@@ -168,10 +172,13 @@ struct bit_iterator : detail::bit_iterator_impl<bit_iterator<BO>>
         base{byte, bitno}
     {}
 
-    reference operator*() const noexcept
+    constexpr pointer operator->() const noexcept
+    { return pointer(**this); }
+
+    constexpr reference operator*() const noexcept
     { return reference(this->byte, detail::bitidx<BO>(this->bitno)); }
 
-    reference operator[](std::size_t n) const noexcept
+    constexpr reference operator[](std::size_t n) const noexcept
     { return *(*this+n); }
 };
 
@@ -192,7 +199,10 @@ struct const_bit_iterator : detail::bit_iterator_impl<const_bit_iterator<BO>>
         base{const_cast<std::uint8_t*>(byte), bitno}
     {}
 
-    const_reference operator*() const noexcept
+    constexpr const_pointer operator->() const noexcept
+    { return const_pointer(**this); }
+
+    constexpr const_reference operator*() const noexcept
     { return bitref(this->byte, detail::bitidx<BO>(this->bitno)); }
 
     const_reference operator[](std::size_t n) const noexcept

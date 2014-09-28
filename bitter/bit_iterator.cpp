@@ -57,40 +57,40 @@ std::string hexstring(uint8_t *data, std::size_t n)
     return std::string(ret.data(), retlen);
 }
 
-template <typename OutIt>
-std::string copy_and_hexify(const bitvec& source, ptrdiff_t n)
+std::array<uint8_t,8> exparr_msb0 =
+{ /* 00010110 */ 0x16,
+  /* 11101011 */ 0xeb,
+  /* 00110011 */ 0x33,
+  /* 00011000 */ 0x18,
+  /* 01110000 */ 0x70,
+  /* 11110000 */ 0xf0,
+  /* 01111100 */ 0x7c,
+  /* 00001111 */ 0x0f };
+std::array<uint8_t,8> exparr_lsb0 =
+{ /* 01101000 */ 0x68,
+  /* 11010111 */ 0xd7,
+  /* 11001100 */ 0xcc,
+  /* 00011000 */ 0x18,
+  /* 00001110 */ 0x0e,
+  /* 00001111 */ 0x0f,
+  /* 00111110 */ 0x3e,
+  /* 11110000 */ 0xf0 };
+
+static constexpr std::size_t exparr_bits = sizeof(exparr_lsb0) * 8;
+
+template <bitter::bit_order BO>
+std::array<uint8_t,8> exparr()
 {
-    std::vector<uint8_t> out((n+7)/8);
-    std::copy(begin(source), next(begin(source), n), OutIt(out.data(), 0));
-    return hexstring(out.data(), n);
+    static constexpr bool is_msb0 = BO == bitter::bit_order::msb0;
+    return is_msb0 ? exparr_msb0 : exparr_lsb0;
 }
-
-uint8_t exparr_msb0[8] = { /* 00010110 */ 0x16,
-                            /* 11101011 */ 0xeb,
-                            /* 00110011 */ 0x33,
-                            /* 00011000 */ 0x18,
-                            /* 01110000 */ 0x70,
-                            /* 11110000 */ 0xf0,
-                            /* 01111100 */ 0x7c,
-                            /* 00001111 */ 0x0f };
-uint8_t exparr_lsb0[8] = { /* 01101000 */ 0x68,
-                            /* 11010111 */ 0xd7,
-                            /* 11001100 */ 0xcc,
-                            /* 00011000 */ 0x18,
-                            /* 00001110 */ 0x0e,
-                            /* 00001111 */ 0x0f,
-                            /* 00111110 */ 0x3e,
-                            /* 11110000 */ 0xf0 };
-
-static constexpr std::size_t arr_bits = sizeof(exparr_lsb0) * 8;
 
 template <bitter::bit_order BO, typename T>
 void for_each_bit(T&& t)
 {
-    static constexpr bool is_msb0 = BO == bitter::bit_order::msb0;
-    uint8_t (&exparr)[8] = is_msb0 ? exparr_msb0 : exparr_lsb0;
-    for (std::size_t b = 0; b < 8*sizeof(exparr)/sizeof(uint8_t); ++b)
-        t(exparr, b);
+    std::array<uint8_t,8> data = exparr<BO>();
+    for (std::size_t b = 0; b < 8*data.size(); ++b)
+        t(data.data(), b);
 }
 
 bitter::bit expval(std::size_t pos)
@@ -105,12 +105,11 @@ bitter::bit expval(std::size_t pos)
 template <bitter::bit_order BO, typename T>
 void for_each_bit_pair(T&& t)
 {
-    static constexpr bool is_msb0 = BO == bitter::bit_order::msb0;
-    uint8_t (&exparr)[8] = is_msb0 ? exparr_msb0 : exparr_lsb0;
-    static constexpr std::size_t bits = 8*sizeof(exparr)/sizeof(uint8_t);
+    std::array<uint8_t,8> data = exparr<BO>();
+    static constexpr std::size_t bits = 8*data.size();
     for (ptrdiff_t b1 = 0; b1 < bits; ++b1)
         for (ptrdiff_t b2 = 0; b2 < bits; ++b2)
-            t(exparr, b1, b2);
+            t(data.data(), b1, b2);
 }
 
 template <typename T>
@@ -158,16 +157,11 @@ void observing_tests()
     static constexpr bitter::bit_order bit_order
         = bit_iterator_traits<Iter>::bit_order;
 
+    /* Construction and assignment *////////////////////////////////////////////
+
     it("supports construction from byte and bitno", []{
         for_each_bit<bit_order>([](Data* arr, std::size_t b){
             Iter i(&arr[b/8], b%8);
-        });
-    });
-
-    it("is dereferencable", []{
-        for_each_bit<bit_order>([](Data* arr, std::size_t b){
-            Iter i(&arr[b/8], b%8);
-            AssertThat(*i, Equals(expval(b)));
         });
     });
 
@@ -190,13 +184,83 @@ void observing_tests()
         });
     });
 
+    it("is swappable", []{
+        for_each_bit_pair<bit_order>([](Data* arr, ptrdiff_t b1, ptrdiff_t b2){
+            Iter i1(&arr[b1/8], b1%8);
+            const Iter i1s(&arr[b1/8], b1%8);
+            Iter i2(&arr[b2/8], b2%8);
+            const Iter i2s(&arr[b2/8], b2%8);
+            swap(i1, i2);
+            AssertThat(i1, Equals(i2s));
+            AssertThat(i2, Equals(i1s));
+            AssertThat(*i1, Equals(expval(b2)));
+            AssertThat(*i2, Equals(expval(b1)));
+        });
+    });
+
+    it("is swappable when LHS is moved", []{
+        for_each_bit_pair<bit_order>([](Data* arr, ptrdiff_t b1, ptrdiff_t b2){
+            Iter i1(&arr[b1/8], b1%8);
+            const Iter i1s(&arr[b1/8], b1%8);
+            Iter i2(&arr[b2/8], b2%8);
+            const Iter i2s(&arr[b2/8], b2%8);
+            swap(std::move(i1), i2);
+            AssertThat(i1, Equals(i2s));
+            AssertThat(i2, Equals(i1s));
+            AssertThat(*i1, Equals(expval(b2)));
+            AssertThat(*i2, Equals(expval(b1)));
+        });
+    });
+
+    it("is swappable when RHS is moved", []{
+        for_each_bit_pair<bit_order>([](Data* arr, ptrdiff_t b1, ptrdiff_t b2){
+            Iter i1(&arr[b1/8], b1%8);
+            const Iter i1s(&arr[b1/8], b1%8);
+            Iter i2(&arr[b2/8], b2%8);
+            const Iter i2s(&arr[b2/8], b2%8);
+            swap(i1, std::move(i2));
+            AssertThat(i1, Equals(i2s));
+            AssertThat(i2, Equals(i1s));
+            AssertThat(*i1, Equals(expval(b2)));
+            AssertThat(*i2, Equals(expval(b1)));
+        });
+    });
+
+    /* Dereferencing *//////////////////////////////////////////////////////////
+
+    it("is dereferencable with ->", []{
+        for_each_bit<bit_order>([](Data* arr, std::size_t b){
+            Iter i(&arr[b/8], b%8);
+            AssertThat(i->operator bool(), Equals(expval(b)));
+        });
+    });
+
+    it("is dereferencable with *", []{
+        for_each_bit<bit_order>([](Data* arr, std::size_t b){
+            Iter i(&arr[b/8], b%8);
+            AssertThat(*i, Equals(expval(b)));
+        });
+    });
+
+    it("is dereferencable with []", []{
+        for_each_bit_pair<bit_order>([](Data* arr, ptrdiff_t b1, ptrdiff_t b2){
+            Iter i1(&arr[b1/8], b1%8);
+            const Iter i1s(&arr[b1/8], b1%8);
+            std::ptrdiff_t delta = b2 - b1;
+            AssertThat(i1[delta], Equals(expval(b2)));
+            AssertThat(i1, Equals(i1s));
+        });
+    });
+
+    /* Navigation mutators *////////////////////////////////////////////////////
+
     it("supports preincrement", []{
         for_each_bit<bit_order>([](Data* arr, std::size_t b){
             Iter i1(&arr[b/8], b%8);
             const Iter i2(&arr[(b+1)/8], (b+1)%8);
             AssertThat(++i1, Equals(i2));
             AssertThat(i1, Equals(i2));
-            if (b+1 < arr_bits) AssertThat(*i1, Equals(expval(b+1)));
+            if (b+1 < exparr_bits) AssertThat(*i1, Equals(expval(b+1)));
         });
     });
 
@@ -207,7 +271,7 @@ void observing_tests()
             const Iter i3(&arr[(b+1)/8], (b+1)%8);
             AssertThat(i1++, Equals(i2));
             AssertThat(i1, Equals(i3));
-            if (b+1 < arr_bits) AssertThat(*i1, Equals(expval(b+1)));
+            if (b+1 < exparr_bits) AssertThat(*i1, Equals(expval(b+1)));
         });
     });
 
@@ -253,6 +317,8 @@ void observing_tests()
             AssertThat(*i1, Equals(expval(b2)));
         });
     });
+
+    /* Navigation free function opearators *////////////////////////////////////
 
     it("supports subtracting one iterator from another", []{
         for_each_bit_pair<bit_order>([](Data* arr, ptrdiff_t b1, ptrdiff_t b2){
@@ -305,14 +371,59 @@ void observing_tests()
         });
     });
 
-    it("supports equality/inequality comparison", []{
+    /* Comparison free function opearators *////////////////////////////////////
+
+    it("supports equality comparison", []{
         for_each_bit_pair<bit_order>([](Data* arr, ptrdiff_t b1, ptrdiff_t b2){
             Iter i1(&arr[b1/8], b1%8);
             Iter i2(&arr[b2/8], b2%8);
             AssertThat(i1 == i2, Equals(b1 == b2));
+        });
+    });
+
+    it("supports inequality comparison", []{
+        for_each_bit_pair<bit_order>([](Data* arr, ptrdiff_t b1, ptrdiff_t b2){
+            Iter i1(&arr[b1/8], b1%8);
+            Iter i2(&arr[b2/8], b2%8);
             AssertThat(i1 != i2, Equals(b1 != b2));
         });
     });
+
+    /* Relational free function opearators *////////////////////////////////////
+
+    it("supports less-than comparison", []{
+        for_each_bit_pair<bit_order>([](Data* arr, ptrdiff_t b1, ptrdiff_t b2){
+            Iter i1(&arr[b1/8], b1%8);
+            Iter i2(&arr[b2/8], b2%8);
+            AssertThat(i1 < i2, Equals(b1 < b2));
+        });
+    });
+
+    it("supports less-than-or-equal comparison", []{
+        for_each_bit_pair<bit_order>([](Data* arr, ptrdiff_t b1, ptrdiff_t b2){
+            Iter i1(&arr[b1/8], b1%8);
+            Iter i2(&arr[b2/8], b2%8);
+            AssertThat(i1 <= i2, Equals(b1 <= b2));
+        });
+    });
+
+    it("supports greater-than comparison", []{
+        for_each_bit_pair<bit_order>([](Data* arr, ptrdiff_t b1, ptrdiff_t b2){
+            Iter i1(&arr[b1/8], b1%8);
+            Iter i2(&arr[b2/8], b2%8);
+            AssertThat(i1 > i2, Equals(b1 > b2));
+        });
+    });
+
+    it("supports greater-than-or-equal comparison", []{
+        for_each_bit_pair<bit_order>([](Data* arr, ptrdiff_t b1, ptrdiff_t b2){
+            Iter i1(&arr[b1/8], b1%8);
+            Iter i2(&arr[b2/8], b2%8);
+            AssertThat(i1 >= i2, Equals(b1 >= b2));
+        });
+    });
+
+    /* Misc *///////////////////////////////////////////////////////////////////
 
     it("satisfies the examples in NIST FIPS 202, bytes -> bits", []{
         std::array<Data,1> data = {{0xA3}};
@@ -328,11 +439,45 @@ void observing_tests()
     });
 }
 
+template <typename T>
+std::array<uint8_t,8> for_each_bit2(T&& t)
+{
+    std::array<uint8_t,8> ret{};
+    for (std::size_t b = 0; b < 8*ret.size(); ++b)
+        t(ret.data(), b);
+    return ret;
+}
+
+template <typename OutIt>
+std::string copy_and_hexify(const bitvec& source, ptrdiff_t n)
+{
+    std::vector<uint8_t> out((n+7)/8);
+    std::copy(begin(source), next(begin(source), n), OutIt(out.data(), 0));
+    return hexstring(out.data(), n);
+}
+
 template <class Data, class Iter>
 void mutating_tests()
 {
     static constexpr bitter::bit_order bit_order
         = bit_iterator_traits<Iter>::bit_order;
+
+    it("supports dereference-and-assign", []{
+        AssertThat(for_each_bit2([&](Data* arr, std::size_t b){
+            Iter i1(&arr[b/8], b%8);
+            *i1 = expval(b);
+        }), Equals(exparr<bit_order>()));
+    });
+
+    it("supports dereference-postincrement-and-assign", []{
+        std::array<uint8_t,8> arr{};
+        Iter it(arr.data(),0);
+        for (std::size_t b = 0; b < exparr_bits; ++b) {
+            *it++ = expval(b);
+        }
+        AssertThat(arr, Equals(exparr<bit_order>()));
+    });
+
     it("satisfies the examples in NIST FIPS 202, bits -> bytes", []{
         unsigned char data_out[] = {0,0};
         const bitvec interpreted_as_bits =

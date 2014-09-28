@@ -20,17 +20,17 @@ struct bit {
     bit& operator^=(bit o) noexcept { return (m_bit^=o.m_bit), *this; }
     bit& operator^=(bool o) noexcept { return (m_bit^=o), *this; }
 
-    friend bool operator==(bit a, bit b) noexcept
+    friend constexpr bool operator==(bit a, bit b) noexcept
     { return a.m_bit == b.m_bit; }
-    friend bool operator==(bool a, bit b) noexcept
+    friend constexpr bool operator==(bool a, bit b) noexcept
     { return bit(a) == b; }
-    friend bool operator==(bit a, bool b) noexcept
+    friend constexpr bool operator==(bit a, bool b) noexcept
     { return a == bit(b); }
-    friend bool operator!=(bit a, bit b) noexcept
+    friend constexpr bool operator!=(bit a, bit b) noexcept
     { return !(a==b); }
-    friend bool operator!=(bool a, bit b) noexcept
+    friend constexpr bool operator!=(bool a, bit b) noexcept
     { return !(a==b); }
-    friend bool operator!=(bit a, bool b) noexcept
+    friend constexpr bool operator!=(bit a, bool b) noexcept
     { return !(a==b); }
 
     friend constexpr bit operator!(bit a) noexcept
@@ -81,6 +81,32 @@ struct bit {
 private:
     bool m_bit{false};
 };
+
+constexpr bool operator==(bit a, bit b) noexcept;
+constexpr bool operator==(bool a, bit b) noexcept;
+constexpr bool operator==(bit a, bool b) noexcept;
+constexpr bool operator!=(bit a, bit b) noexcept;
+constexpr bool operator!=(bool a, bit b) noexcept;
+constexpr bool operator!=(bit a, bool b) noexcept;
+constexpr bit operator!(bit a) noexcept;
+constexpr bit operator&(bit a, bit b) noexcept;
+constexpr bit operator&(bool a, bit b) noexcept;
+constexpr bit operator&(bit a, bool b) noexcept;
+constexpr bit operator|(bit a, bit b) noexcept;
+constexpr bit operator|(bool a, bit b) noexcept;
+constexpr bit operator|(bit a, bool b) noexcept;
+constexpr bit operator^(bit a, bit b) noexcept;
+constexpr bit operator^(bool a, bit b) noexcept;
+constexpr bit operator^(bit a, bool b) noexcept;
+constexpr bit operator&&(bit a, bit b) noexcept;
+constexpr bit operator&&(bool a, bit b) noexcept;
+constexpr bit operator&&(bit a, bool b) noexcept;
+constexpr bit operator||(bit a, bit b) noexcept;
+constexpr bit operator||(bool a, bit b) noexcept;
+constexpr bit operator||(bit a, bool b) noexcept;
+void swap(bit& a, bit& b) noexcept;
+void swap(bit&& a, bit& b) noexcept;
+void swap(bit& a, bit&& b) noexcept;
 } // namespace bitter
 
 #endif // BITTER_BIT_HPP

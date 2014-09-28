@@ -20,32 +20,6 @@ constexpr std::uint8_t bitidx(std::uint8_t bitno)
     return (BO == bit_order::lsb0) ? bitno : (7-bitno);
 }
 
-struct bitref
-{
-    bitref() noexcept = default;
-    bitref(uint8_t* c, uint8_t bitidx) noexcept : byte{c}, bitidx{bitidx} {}
-
-    bitref& operator=(bit b) noexcept
-    {
-        bool bb(b);
-        *byte = (*byte & ~(1<<bitidx)) | (bb<<bitidx);
-        return *this;
-    }
-
-    operator bit() const noexcept
-    {
-        return bit(*byte & (1<<bitidx));
-    }
-private:
-    uint8_t* byte{nullptr};
-    uint8_t bitidx{0}; /// bitidx = n to represent the nth least
-                       /// significant bit.
-                       /// To represent the first bit in the part of a
-                       /// message held by this byte, an LSB0 bit_iterator will
-                       /// set bitidx to 0, and an MSB0 bit_iterator will set
-                       /// bitidx to 7.
-};
-
 struct const_bitptr
 {
     const bit* operator->() const { return &b; }
@@ -149,17 +123,41 @@ struct bit_iterator_impl : bit_iterator_base
     { i += n; return i; }
     friend T operator-(T i, std::ptrdiff_t n) noexcept
     { i -= n; return i; }
-    friend T operator-(std::ptrdiff_t n, T i) noexcept
-    { i -= n; return i; }
 };
 
 } // namespace detail
+
+struct bitref
+{
+    bitref() noexcept = default;
+    bitref(uint8_t* c, uint8_t bitidx) noexcept : byte{c}, bitidx{bitidx} {}
+
+    bitref& operator=(bit b) noexcept
+    {
+        bool bb(b);
+        *byte = (*byte & ~(1<<bitidx)) | (bb<<bitidx);
+        return *this;
+    }
+
+    operator bit() const noexcept
+    {
+        return bit(*byte & (1<<bitidx));
+    }
+private:
+    uint8_t* byte{nullptr};
+    uint8_t bitidx{0}; /// bitidx = n to represent the nth least
+                       /// significant bit.
+                       /// To represent the first bit in the part of a
+                       /// message held by this byte, an LSB0 bit_iterator will
+                       /// set bitidx to 0, and an MSB0 bit_iterator will set
+                       /// bitidx to 7.
+};
 
 template <bit_order BO, byte_order = byte_order::none>
 struct bit_iterator : detail::bit_iterator_impl<bit_iterator<BO>>
 {
     using base      = detail::bit_iterator_impl<bit_iterator<BO>>;
-    using reference = detail::bitref;
+    using reference = bitref;
     using pointer   = detail::bitptr;
     using iterator  = bit_iterator;
 
@@ -195,7 +193,7 @@ struct const_bit_iterator : detail::bit_iterator_impl<const_bit_iterator<BO>>
     {}
 
     const_reference operator*() const noexcept
-    { return detail::bitref(this->byte, detail::bitidx<BO>(this->bitno)); }
+    { return bitref(this->byte, detail::bitidx<BO>(this->bitno)); }
 
     const_reference operator[](std::size_t n) const noexcept
     { return *(*this+n); }

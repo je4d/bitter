@@ -14,10 +14,48 @@ namespace detail {
 
 using std::uint8_t;
 
-template <bit_order BO>
+// byteidx, bitidx
+//
+// if an integer 't' is interpreted as a string of bits, what is the
+// significance of the nth bit of the bitstring in t?
+//
+// e.g. in a uint64_t on a big endian architecture with msb0 bit ordering,
+// where is bit #5?
+// The bit #5 is in the first byte stored, which is the most significant byte
+// in big-endian numbers. So it's in the most significant byte, i.e. its
+// significance is between 2^56 and 2^63.
+// The most significant bit within that is bit 0, so bit #5 is the 6th most
+// significant bit. the most significant end of our range is 2^63, so counting
+// back we get a significance of 2^58, which gives us a 'bit index' of 58.
+//
+
+template <byte_order EI>
+constexpr std::uint8_t byteidx(std::uint8_t byteno, std::uint8_t bytes)
+{
+    return (EI == byte_order::lsb0 or EI == byte_order::none)
+        ? byteno
+        :  (EI == byte_order::msb0)
+            ? (bytes - 1) - byteno
+            :  (EI == byte_order::pdp_endian)
+                ? (bytes == 4)
+                    ? (byteno < (bytes/2))
+                        ? byteidx<byte_order::lsb0>(byteno, bytes/2) + bytes/2
+                        : byteidx<byte_order::lsb0>(byteno-bytes/2, bytes/2)
+                    : byteidx<byte_order::lsb0>(byteno, bytes)
+                :  throw "byteidx needs a valid byte_order";
+}
+
+template <typename UL, byte_order EI>
+constexpr std::uint8_t byteidx(std::uint8_t byteno)
+{
+    return byteidx<EI>(byteno, sizeof(UL));
+}
+
+template <bit_order BO, typename UL, byte_order EI>
 constexpr std::uint8_t bitidx(std::uint8_t bitno)
 {
-    return (BO == bit_order::lsb0) ? bitno : (7-bitno);
+    return 8*byteidx<UL,EI>(bitno/8)
+        + ((BO == bit_order::lsb0) ? (bitno%8) : (7-(bitno%8)));
 }
 
 struct const_bitptr
@@ -157,10 +195,10 @@ private:
                        /// bitidx to 7.
 };
 
-template <bit_order BO, byte_order = byte_order::none>
-struct bit_iterator : detail::bit_iterator_impl<bit_iterator<BO>>
+template <bit_order BO,typename UL=std::uint8_t,byte_order EI=byte_order::none>
+struct bit_iterator : detail::bit_iterator_impl<bit_iterator<BO,UL,EI>>
 {
-    using base      = detail::bit_iterator_impl<bit_iterator<BO>>;
+    using base      = detail::bit_iterator_impl<bit_iterator<BO,UL,EI>>;
     using reference = bitref;
     using pointer   = detail::bitptr;
     using iterator  = bit_iterator;
@@ -176,16 +214,18 @@ struct bit_iterator : detail::bit_iterator_impl<bit_iterator<BO>>
     { return pointer(**this); }
 
     constexpr reference operator*() const noexcept
-    { return reference(this->byte, detail::bitidx<BO>(this->bitno)); }
+    { return reference(this->byte, detail::bitidx<BO,UL,EI>(this->bitno)); }
 
     constexpr reference operator[](std::size_t n) const noexcept
     { return *(*this+n); }
 };
 
-template <bit_order BO, byte_order = byte_order::none>
-struct const_bit_iterator : detail::bit_iterator_impl<const_bit_iterator<BO>>
+template <bit_order BO,typename UL=std::uint8_t,byte_order EI=byte_order::none>
+struct const_bit_iterator : detail::bit_iterator_impl<
+                                const_bit_iterator<BO,UL,EI>>
 {
-    using base            = detail::bit_iterator_impl<const_bit_iterator<BO>>;
+    using base            = detail::bit_iterator_impl<
+                                const_bit_iterator<BO,UL,EI>>;
     using reference       = bit;
     using const_reference = bit;
     using pointer         = detail::const_bitptr;
@@ -203,7 +243,7 @@ struct const_bit_iterator : detail::bit_iterator_impl<const_bit_iterator<BO>>
     { return const_pointer(**this); }
 
     constexpr const_reference operator*() const noexcept
-    { return bitref(this->byte, detail::bitidx<BO>(this->bitno)); }
+    { return bitref(this->byte, detail::bitidx<BO,UL,EI>(this->bitno)); }
 
     const_reference operator[](std::size_t n) const noexcept
     { return *(*this+n); }

@@ -115,17 +115,19 @@ void for_each_bit_pair(T&& t)
 template <typename T>
 struct bit_iterator_traits;
 
-template <bitter::bit_order BO, bitter::byte_order EI>
-struct bit_iterator_traits<bitter::bit_iterator<BO,EI>>
+template <bitter::bit_order BO, typename UL, bitter::byte_order EI>
+struct bit_iterator_traits<bitter::bit_iterator<BO,UL,EI>>
 {
     static constexpr bitter::bit_order bit_order = BO;
+    using underlying_type = UL;
     static constexpr bitter::byte_order byte_order = EI;
 };
 
-template <bitter::bit_order BO, bitter::byte_order EI>
-struct bit_iterator_traits<bitter::const_bit_iterator<BO,EI>>
+template <bitter::bit_order BO, typename UL, bitter::byte_order EI>
+struct bit_iterator_traits<bitter::const_bit_iterator<BO,UL,EI>>
 {
     static constexpr bitter::bit_order bit_order = BO;
+    using underlying_type = UL;
     static constexpr bitter::byte_order byte_order = EI;
 };
 
@@ -539,6 +541,188 @@ go_bandit([]{
         describe("over uint8_t", []{
             observing_tests<uint8_t,bit_iterator<lsb0>>();
             mutating_tests<uint8_t,bit_iterator<lsb0>>();
+        });
+    });
+
+    describe("byteidx", []{
+        using namespace bitter::detail;
+        using namespace bitter;
+        constexpr auto big_endian = byte_order::big_endian;
+        constexpr auto little_endian = byte_order::little_endian;
+        constexpr auto pdp_endian = byte_order::pdp_endian;
+        it("supports big endian", [&]{
+            AssertThat((byteidx<char,big_endian>(0)),Equals(0));
+            AssertThat((byteidx<uint8_t,big_endian>(0)),Equals(0));
+            AssertThat((byteidx<uint16_t,big_endian>(0)),Equals(1));
+            AssertThat((byteidx<uint16_t,big_endian>(1)),Equals(0));
+            AssertThat((byteidx<uint32_t,big_endian>(0)),Equals(3));
+            AssertThat((byteidx<uint32_t,big_endian>(1)),Equals(2));
+            AssertThat((byteidx<uint32_t,big_endian>(2)),Equals(1));
+            AssertThat((byteidx<uint32_t,big_endian>(3)),Equals(0));
+            AssertThat((byteidx<uint64_t,big_endian>(0)),Equals(7));
+            AssertThat((byteidx<uint64_t,big_endian>(1)),Equals(6));
+            AssertThat((byteidx<uint64_t,big_endian>(2)),Equals(5));
+            AssertThat((byteidx<uint64_t,big_endian>(3)),Equals(4));
+            AssertThat((byteidx<uint64_t,big_endian>(4)),Equals(3));
+            AssertThat((byteidx<uint64_t,big_endian>(5)),Equals(2));
+            AssertThat((byteidx<uint64_t,big_endian>(6)),Equals(1));
+            AssertThat((byteidx<uint64_t,big_endian>(7)),Equals(0));
+        });
+
+        it("supports big endian", [&]{
+            AssertThat((byteidx<char,little_endian>(0)),Equals(0));
+            AssertThat((byteidx<uint8_t,little_endian>(0)),Equals(0));
+            AssertThat((byteidx<uint16_t,little_endian>(0)),Equals(0));
+            AssertThat((byteidx<uint16_t,little_endian>(1)),Equals(1));
+            AssertThat((byteidx<uint32_t,little_endian>(0)),Equals(0));
+            AssertThat((byteidx<uint32_t,little_endian>(1)),Equals(1));
+            AssertThat((byteidx<uint32_t,little_endian>(2)),Equals(2));
+            AssertThat((byteidx<uint32_t,little_endian>(3)),Equals(3));
+            AssertThat((byteidx<uint64_t,little_endian>(0)),Equals(0));
+            AssertThat((byteidx<uint64_t,little_endian>(1)),Equals(1));
+            AssertThat((byteidx<uint64_t,little_endian>(2)),Equals(2));
+            AssertThat((byteidx<uint64_t,little_endian>(3)),Equals(3));
+            AssertThat((byteidx<uint64_t,little_endian>(4)),Equals(4));
+            AssertThat((byteidx<uint64_t,little_endian>(5)),Equals(5));
+            AssertThat((byteidx<uint64_t,little_endian>(6)),Equals(6));
+            AssertThat((byteidx<uint64_t,little_endian>(7)),Equals(7));
+        });
+
+        it("supports pdp endian", [&]{
+            AssertThat((byteidx<uint32_t,pdp_endian>(0)),Equals(2));
+            AssertThat((byteidx<uint32_t,pdp_endian>(1)),Equals(3));
+            AssertThat((byteidx<uint32_t,pdp_endian>(2)),Equals(0));
+            AssertThat((byteidx<uint32_t,pdp_endian>(3)),Equals(1));
+        });
+    });
+
+    describe("bitidx, lsb0", []{
+        using namespace bitter::detail;
+        using namespace bitter;
+        constexpr auto msb0 = bit_order::msb0;
+        constexpr auto lsb0 = bit_order::lsb0;
+        constexpr auto big_endian = byte_order::big_endian;
+//        constexpr auto little_endian = byte_order::little_endian;
+        constexpr auto pdp_endian = byte_order::pdp_endian;
+        it("supports one-byte types/msb0", [&]{
+            AssertThat((bitidx<msb0,char,big_endian>(0)),Equals(7));
+            AssertThat((bitidx<msb0,char,big_endian>(1)),Equals(6));
+            AssertThat((bitidx<msb0,char,big_endian>(2)),Equals(5));
+            AssertThat((bitidx<msb0,char,big_endian>(3)),Equals(4));
+            AssertThat((bitidx<msb0,char,big_endian>(4)),Equals(3));
+            AssertThat((bitidx<msb0,char,big_endian>(5)),Equals(2));
+            AssertThat((bitidx<msb0,char,big_endian>(6)),Equals(1));
+            AssertThat((bitidx<msb0,char,big_endian>(7)),Equals(0));
+
+            AssertThat((bitidx<msb0,uint8_t,big_endian>(0)),Equals(7));
+            AssertThat((bitidx<msb0,uint8_t,big_endian>(1)),Equals(6));
+            AssertThat((bitidx<msb0,uint8_t,big_endian>(2)),Equals(5));
+            AssertThat((bitidx<msb0,uint8_t,big_endian>(3)),Equals(4));
+            AssertThat((bitidx<msb0,uint8_t,big_endian>(4)),Equals(3));
+            AssertThat((bitidx<msb0,uint8_t,big_endian>(5)),Equals(2));
+            AssertThat((bitidx<msb0,uint8_t,big_endian>(6)),Equals(1));
+            AssertThat((bitidx<msb0,uint8_t,big_endian>(7)),Equals(0));
+        });
+
+        it("supports one-byte types/lsb0", [&]{
+            AssertThat((bitidx<lsb0,char,big_endian>(0)),Equals(0));
+            AssertThat((bitidx<lsb0,char,big_endian>(1)),Equals(1));
+            AssertThat((bitidx<lsb0,char,big_endian>(2)),Equals(2));
+            AssertThat((bitidx<lsb0,char,big_endian>(3)),Equals(3));
+            AssertThat((bitidx<lsb0,char,big_endian>(4)),Equals(4));
+            AssertThat((bitidx<lsb0,char,big_endian>(5)),Equals(5));
+            AssertThat((bitidx<lsb0,char,big_endian>(6)),Equals(6));
+            AssertThat((bitidx<lsb0,char,big_endian>(7)),Equals(7));
+
+            AssertThat((bitidx<lsb0,uint8_t,big_endian>(0)),Equals(0));
+            AssertThat((bitidx<lsb0,uint8_t,big_endian>(1)),Equals(1));
+            AssertThat((bitidx<lsb0,uint8_t,big_endian>(2)),Equals(2));
+            AssertThat((bitidx<lsb0,uint8_t,big_endian>(3)),Equals(3));
+            AssertThat((bitidx<lsb0,uint8_t,big_endian>(4)),Equals(4));
+            AssertThat((bitidx<lsb0,uint8_t,big_endian>(5)),Equals(5));
+            AssertThat((bitidx<lsb0,uint8_t,big_endian>(6)),Equals(6));
+            AssertThat((bitidx<lsb0,uint8_t,big_endian>(7)),Equals(7));
+        });
+
+        it("supports big endian/msb0", [&]{
+            AssertThat((bitidx<msb0,uint16_t,big_endian>( 0)),Equals(15));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>( 1)),Equals(14));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>( 2)),Equals(13));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>( 3)),Equals(12));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>( 4)),Equals(11));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>( 5)),Equals(10));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>( 6)),Equals( 9));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>( 7)),Equals( 8));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>( 8)),Equals( 7));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>( 9)),Equals( 6));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>(10)),Equals( 5));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>(11)),Equals( 4));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>(12)),Equals( 3));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>(13)),Equals( 2));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>(14)),Equals( 1));
+            AssertThat((bitidx<msb0,uint16_t,big_endian>(15)),Equals( 0));
+
+            AssertThat((bitidx<msb0,uint32_t,big_endian>( 8)),Equals(23));
+            AssertThat((bitidx<msb0,uint32_t,big_endian>( 9)),Equals(22));
+            AssertThat((bitidx<msb0,uint32_t,big_endian>(10)),Equals(21));
+            AssertThat((bitidx<msb0,uint32_t,big_endian>(11)),Equals(20));
+            AssertThat((bitidx<msb0,uint32_t,big_endian>(12)),Equals(19));
+            AssertThat((bitidx<msb0,uint32_t,big_endian>(13)),Equals(18));
+            AssertThat((bitidx<msb0,uint32_t,big_endian>(14)),Equals(17));
+            AssertThat((bitidx<msb0,uint32_t,big_endian>(15)),Equals(16));
+
+            AssertThat((bitidx<msb0,uint64_t,big_endian>(40)),Equals(23));
+            AssertThat((bitidx<msb0,uint64_t,big_endian>(41)),Equals(22));
+            AssertThat((bitidx<msb0,uint64_t,big_endian>(42)),Equals(21));
+            AssertThat((bitidx<msb0,uint64_t,big_endian>(43)),Equals(20));
+            AssertThat((bitidx<msb0,uint64_t,big_endian>(44)),Equals(19));
+            AssertThat((bitidx<msb0,uint64_t,big_endian>(45)),Equals(18));
+            AssertThat((bitidx<msb0,uint64_t,big_endian>(46)),Equals(17));
+            AssertThat((bitidx<msb0,uint64_t,big_endian>(47)),Equals(16));
+        });
+
+        it("supports big endian/lsb0", [&]{
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>( 0)),Equals( 8));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>( 1)),Equals( 9));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>( 2)),Equals(10));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>( 3)),Equals(11));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>( 4)),Equals(12));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>( 5)),Equals(13));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>( 6)),Equals(14));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>( 7)),Equals(15));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>( 8)),Equals(0));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>( 9)),Equals(1));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>(10)),Equals(2));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>(11)),Equals(3));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>(12)),Equals(4));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>(13)),Equals(5));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>(14)),Equals(6));
+            AssertThat((bitidx<lsb0,uint16_t,big_endian>(15)),Equals(7));
+
+            AssertThat((bitidx<lsb0,uint32_t,big_endian>( 8)),Equals(16));
+            AssertThat((bitidx<lsb0,uint32_t,big_endian>( 9)),Equals(17));
+            AssertThat((bitidx<lsb0,uint32_t,big_endian>(10)),Equals(18));
+            AssertThat((bitidx<lsb0,uint32_t,big_endian>(11)),Equals(19));
+            AssertThat((bitidx<lsb0,uint32_t,big_endian>(12)),Equals(20));
+            AssertThat((bitidx<lsb0,uint32_t,big_endian>(13)),Equals(21));
+            AssertThat((bitidx<lsb0,uint32_t,big_endian>(14)),Equals(22));
+            AssertThat((bitidx<lsb0,uint32_t,big_endian>(15)),Equals(23));
+
+            AssertThat((bitidx<lsb0,uint64_t,big_endian>(40)),Equals(16));
+            AssertThat((bitidx<lsb0,uint64_t,big_endian>(41)),Equals(17));
+            AssertThat((bitidx<lsb0,uint64_t,big_endian>(42)),Equals(18));
+            AssertThat((bitidx<lsb0,uint64_t,big_endian>(43)),Equals(19));
+            AssertThat((bitidx<lsb0,uint64_t,big_endian>(44)),Equals(20));
+            AssertThat((bitidx<lsb0,uint64_t,big_endian>(45)),Equals(21));
+            AssertThat((bitidx<lsb0,uint64_t,big_endian>(46)),Equals(22));
+            AssertThat((bitidx<lsb0,uint64_t,big_endian>(47)),Equals(23));
+        });
+
+        it("supports pdp endian", [&]{
+            AssertThat((byteidx<uint32_t,pdp_endian>(0)),Equals(2));
+            AssertThat((byteidx<uint32_t,pdp_endian>(1)),Equals(3));
+            AssertThat((byteidx<uint32_t,pdp_endian>(2)),Equals(0));
+            AssertThat((byteidx<uint32_t,pdp_endian>(3)),Equals(1));
         });
     });
 });

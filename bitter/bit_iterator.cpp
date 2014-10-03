@@ -59,143 +59,123 @@ std::string hexstring(uint8_t *data, std::size_t n)
     return std::string(ret.data(), retlen);
 }
 
+static constexpr std::size_t testvec_bits = 32*8;
+
 template <bit_order BO, typename UL, byte_order EI = byte_order::none>
 struct testvec_;
 
 template<> struct testvec_<bit_order::lsb0,uint8_t> {
-    static constexpr std::array<uint8_t,64> data {{
+    static constexpr std::array<uint8_t,testvec_bits/8> data {{
         0xa2, 0x2b, 0x34, 0x6c, 0xc9, 0xf8, 0x1f, 0xce,
         0x4c, 0xd2, 0x4a, 0x55, 0x55, 0xb5, 0x5a, 0x6b,
         0x69, 0x4b, 0x92, 0x6d, 0xb2, 0x99, 0xcc, 0xcc,
-        0xcc, 0xcc, 0x8c, 0x19, 0x73, 0xce, 0x18, 0xe7,
-        0x1c, 0xe7, 0x38, 0x8e, 0xe3, 0x38, 0x8e, 0xc7,
-        0xf1, 0x78, 0x3c, 0x1e, 0x0f, 0x87, 0x87, 0x87,
-        0x87, 0x87, 0x87, 0x07, 0x0f, 0x1f, 0x3e, 0x7c,
-        0xf8, 0xe0, 0xc3, 0x07, 0x1f, 0x7c, 0xf0, 0x83 }}; };
-constexpr std::array<uint8_t,64> testvec_<bit_order::lsb0,uint8_t>::data;
+        0xcc, 0xcc, 0x8c, 0x19, 0x73, 0xce, 0x18, 0xe7 }}; };
+constexpr std::array<uint8_t,testvec_bits/8>
+     testvec_<bit_order::lsb0,uint8_t>::data;
 template<> struct testvec_<bit_order::lsb0,uint16_t,byte_order::little_endian> {
-    static constexpr std::array<uint16_t,32> data {{
+    static constexpr std::array<uint16_t,testvec_bits/16> data {{
         0x2ba2, 0x6c34, 0xf8c9, 0xce1f, 0xd24c, 0x554a, 0xb555, 0x6b5a,
-        0x4b69, 0x6d92, 0x99b2, 0xcccc, 0xcccc, 0x198c, 0xce73, 0xe718,
-        0xe71c, 0x8e38, 0x38e3, 0xc78e, 0x78f1, 0x1e3c, 0x870f, 0x8787,
-        0x8787, 0x0787, 0x1f0f, 0x7c3e, 0xe0f8, 0x07c3, 0x7c1f, 0x83f0 }}; };
-constexpr std::array<uint16_t,32> testvec_<bit_order::lsb0,uint16_t,byte_order::little_endian>::data;
+        0x4b69, 0x6d92, 0x99b2, 0xcccc, 0xcccc, 0x198c, 0xce73, 0xe718 }}; };
+constexpr std::array<uint16_t,testvec_bits/16>
+     testvec_<bit_order::lsb0,uint16_t,byte_order::little_endian>::data;
 template<> struct testvec_<bit_order::lsb0,uint32_t,byte_order::little_endian> {
-    static constexpr std::array<uint32_t,16> data {{
+    static constexpr std::array<uint32_t,testvec_bits/32> data {{
         0x6c342ba2, 0xce1ff8c9, 0x554ad24c, 0x6b5ab555,
-        0x6d924b69, 0xcccc99b2, 0x198ccccc, 0xe718ce73,
-        0x8e38e71c, 0xc78e38e3, 0x1e3c78f1, 0x8787870f,
-        0x07878787, 0x7c3e1f0f, 0x07c3e0f8, 0x83f07c1f }}; };
-constexpr std::array<uint32_t,16> testvec_<bit_order::lsb0,uint32_t,byte_order::little_endian>::data;
+        0x6d924b69, 0xcccc99b2, 0x198ccccc, 0xe718ce73 }}; };
+constexpr std::array<uint32_t,testvec_bits/32>
+     testvec_<bit_order::lsb0,uint32_t,byte_order::little_endian>::data;
 template<> struct testvec_<bit_order::lsb0,uint64_t,byte_order::little_endian> {
-    static constexpr std::array<uint64_t,8> data {{
+    static constexpr std::array<uint64_t,testvec_bits/64> data {{
         0xce1ff8c96c342ba2, 0x6b5ab555554ad24c,
-        0xcccc99b26d924b69, 0xe718ce73198ccccc,
-        0xc78e38e38e38e71c, 0x8787870f1e3c78f1,
-        0x7c3e1f0f07878787, 0x83f07c1f07c3e0f8 }}; };
-constexpr std::array<uint64_t,8> testvec_<bit_order::lsb0,uint64_t,byte_order::little_endian>::data;
+        0xcccc99b26d924b69, 0xe718ce73198ccccc }}; };
+constexpr std::array<uint64_t,testvec_bits/64>
+     testvec_<bit_order::lsb0,uint64_t,byte_order::little_endian>::data;
 template<> struct testvec_<bit_order::lsb0,uint32_t,byte_order::pdp_endian> {
-    static constexpr std::array<uint32_t,16> data {{
+    static constexpr std::array<uint32_t,testvec_bits/32> data {{
         0x2ba26c34, 0xf8c9ce1f, 0xd24c554a, 0xb5556b5a,
-        0x4b696d92, 0x99b2cccc, 0xcccc198c, 0xce73e718,
-        0xe71c8e38, 0x38e3c78e, 0x78f11e3c, 0x870f8787,
-        0x87870787, 0x1f0f7c3e, 0xe0f807c3, 0x7c1f83f0 }}; };
-constexpr std::array<uint32_t,16> testvec_<bit_order::lsb0,uint32_t,byte_order::pdp_endian>::data;
+        0x4b696d92, 0x99b2cccc, 0xcccc198c, 0xce73e718 }}; };
+constexpr std::array<uint32_t,testvec_bits/32>
+     testvec_<bit_order::lsb0,uint32_t,byte_order::pdp_endian>::data;
 template<> struct testvec_<bit_order::lsb0,uint16_t,byte_order::big_endian> {
-    static constexpr std::array<uint16_t,32> data {{
+    static constexpr std::array<uint16_t,testvec_bits/16> data {{
         0xa22b, 0x346c, 0xc9f8, 0x1fce, 0x4cd2, 0x4a55, 0x55b5, 0x5a6b,
-        0x694b, 0x926d, 0xb299, 0xcccc, 0xcccc, 0x8c19, 0x73ce, 0x18e7,
-        0x1ce7, 0x388e, 0xe338, 0x8ec7, 0xf178, 0x3c1e, 0x0f87, 0x8787,
-        0x8787, 0x8707, 0x0f1f, 0x3e7c, 0xf8e0, 0xc307, 0x1f7c, 0xf083 }}; };
-constexpr std::array<uint16_t,32> testvec_<bit_order::lsb0,uint16_t,byte_order::big_endian>::data;
+        0x694b, 0x926d, 0xb299, 0xcccc, 0xcccc, 0x8c19, 0x73ce, 0x18e7 }}; };
+constexpr std::array<uint16_t,testvec_bits/16>
+     testvec_<bit_order::lsb0,uint16_t,byte_order::big_endian>::data;
 template<> struct testvec_<bit_order::lsb0,uint32_t,byte_order::big_endian> {
-    static constexpr std::array<uint32_t,16> data {{
+    static constexpr std::array<uint32_t,testvec_bits/32> data {{
         0xa22b346c, 0xc9f81fce, 0x4cd24a55, 0x55b55a6b,
-        0x694b926d, 0xb299cccc, 0xcccc8c19, 0x73ce18e7,
-        0x1ce7388e, 0xe3388ec7, 0xf1783c1e, 0x0f878787,
-        0x87878707, 0x0f1f3e7c, 0xf8e0c307, 0x1f7cf083 }}; };
-constexpr std::array<uint32_t,16> testvec_<bit_order::lsb0,uint32_t,byte_order::big_endian>::data;
+        0x694b926d, 0xb299cccc, 0xcccc8c19, 0x73ce18e7 }}; };
+constexpr std::array<uint32_t,testvec_bits/32>
+     testvec_<bit_order::lsb0,uint32_t,byte_order::big_endian>::data;
 template<> struct testvec_<bit_order::lsb0,uint64_t,byte_order::big_endian> {
-    static constexpr std::array<uint64_t,8> data {{
+    static constexpr std::array<uint64_t,testvec_bits/64> data {{
         0xa22b346cc9f81fce, 0x4cd24a5555b55a6b,
-        0x694b926db299cccc, 0xcccc8c1973ce18e7,
-        0x1ce7388ee3388ec7, 0xf1783c1e0f878787,
-        0x878787070f1f3e7c, 0xf8e0c3071f7cf083 }}; };
-constexpr std::array<uint64_t,8> testvec_<bit_order::lsb0,uint64_t,byte_order::big_endian>::data;
+        0x694b926db299cccc, 0xcccc8c1973ce18e7 }}; };
+constexpr std::array<uint64_t,testvec_bits/64>
+     testvec_<bit_order::lsb0,uint64_t,byte_order::big_endian>::data;
 template<> struct testvec_<bit_order::msb0,uint8_t> {
-    static constexpr std::array<uint8_t,64> data {{
+    static constexpr std::array<uint8_t,testvec_bits/8> data {{
         0x45, 0xd4, 0x2c, 0x36, 0x93, 0x1f, 0xf8, 0x73,
         0x32, 0x4b, 0x52, 0xaa, 0xaa, 0xad, 0x5a, 0xd6,
         0x96, 0xd2, 0x49, 0xb6, 0x4d, 0x99, 0x33, 0x33,
-        0x33, 0x33, 0x31, 0x98, 0xce, 0x73, 0x18, 0xe7,
-        0x38, 0xe7, 0x1c, 0x71, 0xc7, 0x1c, 0x71, 0xe3,
-        0x8f, 0x1e, 0x3c, 0x78, 0xf0, 0xe1, 0xe1, 0xe1,
-        0xe1, 0xe1, 0xe1, 0xe0, 0xf0, 0xf8, 0x7c, 0x3e,
-        0x1f, 0x07, 0xc3, 0xe0, 0xf8, 0x3e, 0x0f, 0xc1 }}; };
-constexpr std::array<uint8_t,64> testvec_<bit_order::msb0,uint8_t>::data;
+        0x33, 0x33, 0x31, 0x98, 0xce, 0x73, 0x18, 0xe7 }}; };
+constexpr std::array<uint8_t,testvec_bits/8>
+     testvec_<bit_order::msb0,uint8_t>::data;
 template<> struct testvec_<bit_order::msb0,uint16_t,byte_order::little_endian> {
-    static constexpr std::array<uint16_t,32> data {{
+    static constexpr std::array<uint16_t,testvec_bits/16> data {{
         0xd445, 0x362c, 0x1f93, 0x73f8, 0x4b32, 0xaa52, 0xadaa, 0xd65a,
-        0xd296, 0xb649, 0x994d, 0x3333, 0x3333, 0x9831, 0x73ce, 0xe718,
-        0xe738, 0x711c, 0x1cc7, 0xe371, 0x1e8f, 0x783c, 0xe1f0, 0xe1e1,
-        0xe1e1, 0xe0e1, 0xf8f0, 0x3e7c, 0x071f, 0xe0c3, 0x3ef8, 0xc10f }}; };
-constexpr std::array<uint16_t,32> testvec_<bit_order::msb0,uint16_t,byte_order::little_endian>::data;
+        0xd296, 0xb649, 0x994d, 0x3333, 0x3333, 0x9831, 0x73ce, 0xe718 }}; };
+constexpr std::array<uint16_t,testvec_bits/16>
+     testvec_<bit_order::msb0,uint16_t,byte_order::little_endian>::data;
 template<> struct testvec_<bit_order::msb0,uint32_t,byte_order::little_endian> {
-    static constexpr std::array<uint32_t,16> data {{
+    static constexpr std::array<uint32_t,testvec_bits/32> data {{
         0x362cd445, 0x73f81f93, 0xaa524b32, 0xd65aadaa,
-        0xb649d296, 0x3333994d, 0x98313333, 0xe71873ce,
-        0x711ce738, 0xe3711cc7, 0x783c1e8f, 0xe1e1e1f0,
-        0xe0e1e1e1, 0x3e7cf8f0, 0xe0c3071f, 0xc10f3ef8 }}; };
-constexpr std::array<uint32_t,16> testvec_<bit_order::msb0,uint32_t,byte_order::little_endian>::data;
+        0xb649d296, 0x3333994d, 0x98313333, 0xe71873ce }}; };
+constexpr std::array<uint32_t,testvec_bits/32>
+     testvec_<bit_order::msb0,uint32_t,byte_order::little_endian>::data;
 template<> struct testvec_<bit_order::msb0,uint64_t,byte_order::little_endian> {
-    static constexpr std::array<uint64_t,8> data {{
+    static constexpr std::array<uint64_t,testvec_bits/64> data {{
         0x73f81f93362cd445, 0xd65aadaaaa524b32,
-        0x3333994db649d296, 0xe71873ce98313333,
-        0xe3711cc7711ce738, 0xe1e1e1f0783c1e8f,
-        0x3e7cf8f0e0e1e1e1, 0xc10f3ef8e0c3071f }}; };
-constexpr std::array<uint64_t,8> testvec_<bit_order::msb0,uint64_t,byte_order::little_endian>::data;
+        0x3333994db649d296, 0xe71873ce98313333 }}; };
+constexpr std::array<uint64_t,testvec_bits/64>
+     testvec_<bit_order::msb0,uint64_t,byte_order::little_endian>::data;
 template<> struct testvec_<bit_order::msb0,uint32_t,byte_order::pdp_endian> {
-    static constexpr std::array<uint32_t,16> data {{
+    static constexpr std::array<uint32_t,testvec_bits/32> data {{
         0xd445362c, 0x1f9373f8, 0x4b32aa52, 0xadaad65a,
-        0xd296b649, 0x994d3333, 0x33339831, 0x73cee718,
-        0xe738711c, 0x1cc7e371, 0x1e8f783c, 0xe1f0e1e1,
-        0xe1e1e0e1, 0xf8f03e7c, 0x071fe0c3, 0x3ef8c10f }}; };
-constexpr std::array<uint32_t,16> testvec_<bit_order::msb0,uint32_t,byte_order::pdp_endian>::data;
+        0xd296b649, 0x994d3333, 0x33339831, 0x73cee718 }}; };
+constexpr std::array<uint32_t,testvec_bits/32>
+     testvec_<bit_order::msb0,uint32_t,byte_order::pdp_endian>::data;
 template<> struct testvec_<bit_order::msb0,uint16_t,byte_order::big_endian> {
-    static constexpr std::array<uint16_t,32> data {{
+    static constexpr std::array<uint16_t,testvec_bits/16> data {{
         0x45d4, 0x2c36, 0x931f, 0xf873, 0x324b, 0x52aa, 0xaaad, 0x5ad6,
-        0x96d2, 0x49b6, 0x4d99, 0x3333, 0x3333, 0x3198, 0xce73, 0x18e7,
-        0x38e7, 0x1c71, 0xc71c, 0x71e3, 0x8f1e, 0x3c78, 0xf0e1, 0xe1e1,
-        0xe1e1, 0xe1e0, 0xf0f8, 0x7c3e, 0x1f07, 0xc3e0, 0xf83e, 0x0fc1 }}; };
-constexpr std::array<uint16_t,32> testvec_<bit_order::msb0,uint16_t,byte_order::big_endian>::data;
+        0x96d2, 0x49b6, 0x4d99, 0x3333, 0x3333, 0x3198, 0xce73, 0x18e7 }}; };
+constexpr std::array<uint16_t,testvec_bits/16>
+     testvec_<bit_order::msb0,uint16_t,byte_order::big_endian>::data;
 template<> struct testvec_<bit_order::msb0,uint32_t,byte_order::big_endian> {
-    static constexpr std::array<uint32_t,16> data {{
+    static constexpr std::array<uint32_t,testvec_bits/32> data {{
         0x45d42c36, 0x931ff873, 0x324b52aa, 0xaaad5ad6,
-        0x96d249b6, 0x4d993333, 0x33333198, 0xce7318e7,
-        0x38e71c71, 0xc71c71e3, 0x8f1e3c78, 0xf0e1e1e1,
-        0xe1e1e1e0, 0xf0f87c3e, 0x1f07c3e0, 0xf83e0fc1 }}; };
-constexpr std::array<uint32_t,16> testvec_<bit_order::msb0,uint32_t,byte_order::big_endian>::data;
+        0x96d249b6, 0x4d993333, 0x33333198, 0xce7318e7 }}; };
+constexpr std::array<uint32_t,testvec_bits/32>
+     testvec_<bit_order::msb0,uint32_t,byte_order::big_endian>::data;
 template<> struct testvec_<bit_order::msb0,uint64_t,byte_order::big_endian> {
-    static constexpr std::array<uint64_t,8> data {{
+    static constexpr std::array<uint64_t,testvec_bits/64> data {{
         0x45d42c36931ff873, 0x324b52aaaaad5ad6,
-        0x96d249b64d993333, 0x33333198ce7318e7,
-        0x38e71c71c71c71e3, 0x8f1e3c78f0e1e1e1,
-        0xe1e1e1e0f0f87c3e, 0x1f07c3e0f83e0fc1 }}; };
-constexpr std::array<uint64_t,8> testvec_<bit_order::msb0,uint64_t,byte_order::big_endian>::data;
+        0x96d249b64d993333, 0x33333198ce7318e7 }}; };
+constexpr std::array<uint64_t,testvec_bits/64>
+     testvec_<bit_order::msb0,uint64_t,byte_order::big_endian>::data;
 
 
 template <bit_order BO, typename UL, byte_order EI = byte_order::none>
-constexpr const std::array<UL,64/sizeof(UL)>& testvec()
+constexpr const std::array<UL,testvec_bits/8/sizeof(UL)>& testvec()
 {
     return testvec_<BO,UL,EI>::data;
 }
 
-static constexpr std::size_t testvec_bits = 64*8;
-
 template <bit_order BO, /*typename T, byte_order EI, */typename T>
 void for_each_bit(T&& t)
 {
-    std::array<uint8_t,64> data = testvec<BO,uint8_t>();
+    std::array<uint8_t,testvec_bits/8> data = testvec<BO,uint8_t>();
     for (std::size_t b = 0; b < 8*data.size(); ++b)
         t(data.data(), b);
 }
@@ -211,7 +191,7 @@ bitter::bit expval(std::size_t pos)
 template <bitter::bit_order BO, typename T>
 void for_each_bit_pair(T&& t)
 {
-    std::array<uint8_t,64> data = testvec<BO,uint8_t>();
+    std::array<uint8_t,testvec_bits/8> data = testvec<BO,uint8_t>();
     static constexpr std::size_t bits = 8*data.size();
     for (ptrdiff_t b1 = 0; b1 < bits; ++b1)
         for (ptrdiff_t b2 = 0; b2 < bits; ++b2)
@@ -548,9 +528,9 @@ void observing_tests()
 }
 
 template <typename T>
-std::array<uint8_t,64> for_each_bit2(T&& t)
+std::array<uint8_t,testvec_bits/8> for_each_bit2(T&& t)
 {
-    std::array<uint8_t,64> ret{};
+    std::array<uint8_t,testvec_bits/8> ret{};
     for (std::size_t b = 0; b < 8*ret.size(); ++b)
         t(ret.data(), b);
     return ret;
@@ -578,7 +558,7 @@ void mutating_tests()
     });
 
     it("supports dereference-postincrement-and-assign", []{
-        std::array<uint8_t,64> arr{};
+        std::array<uint8_t,testvec_bits/8> arr{};
         Iter it(arr.data(),0);
         for (std::size_t b = 0; b < testvec_bits; ++b) {
             *it++ = expval(b);

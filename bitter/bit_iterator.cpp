@@ -527,12 +527,12 @@ void observing_tests()
     });
 }
 
-template <typename T>
-std::array<uint8_t,testvec_bits/8> for_each_bit2(T&& t)
+template <typename UL, typename F>
+std::array<uint8_t,testvec_bits/8> for_each_bit2(F&& f)
 {
-    std::array<uint8_t,testvec_bits/8> ret{};
+    std::array<UL,testvec_bits/(8*sizeof(UL))> ret{};
     for (std::size_t b = 0; b < 8*ret.size(); ++b)
-        t(ret.data(), b);
+        std::forward<F>(f)(ret.data(), b);
     return ret;
 }
 
@@ -544,43 +544,49 @@ std::string copy_and_hexify(const bitvec& source, ptrdiff_t n)
     return hexstring(out.data(), n);
 }
 
-template <class Data, class Iter>
+template <class Iter>
 void mutating_tests()
 {
-    static constexpr bitter::bit_order bit_order
+    static constexpr bitter::bit_order bo
         = bit_iterator_traits<Iter>::bit_order;
+    using ul = typename bit_iterator_traits<Iter>::underlying_type;
+    static constexpr bitter::byte_order ei
+        = bit_iterator_traits<Iter>::byte_order;
+
+    static constexpr std::size_t testvec_elements = testvec_bits/(8*sizeof(ul));
 
     it("supports dereference-and-assign", []{
-        AssertThat(for_each_bit2([&](Data* arr, std::size_t b){
+        AssertThat((for_each_bit2<ul>([&](ul* arr, std::size_t b){
             Iter i1(&arr[b/8], b%8);
             *i1 = expval(b);
-        }), Equals(testvec<bit_order,uint8_t>()));
+        })), Equals(testvec<bo,ul,ei>()));
     });
 
     it("supports dereference-postincrement-and-assign", []{
-        std::array<uint8_t,testvec_bits/8> arr{};
+        std::array<ul,testvec_elements> arr{};
         Iter it(arr.data(),0);
-        for (std::size_t b = 0; b < testvec_bits; ++b) {
+        for (std::size_t b = 0; b < testvec_bits; ++b)
             *it++ = expval(b);
-        }
-        AssertThat(arr, Equals(testvec<bit_order,uint8_t>()));
+        AssertThat(arr, Equals(testvec<bo,ul,ei>()));
     });
 
-    it("satisfies the examples in NIST FIPS 202, bits -> bytes", []{
-        unsigned char data_out[] = {0,0};
-        const bitvec interpreted_as_bits =
-            (bit_order == bitter::bit_order::msb0)
-                ? make_bitvec({1,0,1,0, 0,0,1,1})
-                : make_bitvec({1,1,0,0, 0,1,0,1});
-        std::copy(begin(interpreted_as_bits), end(interpreted_as_bits),
-                  Iter(data_out,0));
-        AssertThat(static_cast<uint8_t>(data_out[0]), Equals(0xa3));
-        AssertThat(static_cast<uint8_t>(data_out[1]), Equals(0));
-    });
+    if (sizeof(ul) == 8) {
+        it("satisfies the examples in NIST FIPS 202, bits -> bytes", []{
+            ul data_out[] = {0,0};
+            const bitvec interpreted_as_bits =
+                (bo == bit_order::msb0)
+                    ? make_bitvec({1,0,1,0, 0,0,1,1})
+                    : make_bitvec({1,1,0,0, 0,1,0,1});
+            std::copy(begin(interpreted_as_bits), end(interpreted_as_bits),
+                      Iter(data_out,0));
+            AssertThat(static_cast<uint8_t>(data_out[0]), Equals(0xa3));
+            AssertThat(static_cast<uint8_t>(data_out[1]), Equals(0));
+        });
+    }
 
     it("handles partial bytes", [&]{
         std::vector<const char*> results =
-            (bit_order == bitter::bit_order::msb0)
+            (bo == bit_order::msb0)
                 ? std::vector<const char*>{"",
                                            "80",   "C0",   "E0",   "F0",
                                            "F8",   "FC",   "FE",   "FF",
@@ -612,7 +618,7 @@ go_bandit([]{
         core_tests<bit_iterator<msb0>>();
         describe("over uint8_t", []{
             observing_tests<uint8_t,bit_iterator<msb0>>();
-            mutating_tests<uint8_t,bit_iterator<msb0>>();
+            mutating_tests<bit_iterator<msb0>>();
         });
     });
     describe("const_bit_iterator<bit_order::lsb0>", []{
@@ -626,7 +632,7 @@ go_bandit([]{
         core_tests<bit_iterator<lsb0>>();
         describe("over uint8_t", []{
             observing_tests<uint8_t,bit_iterator<lsb0>>();
-            mutating_tests<uint8_t,bit_iterator<lsb0>>();
+            mutating_tests<bit_iterator<lsb0>>();
         });
     });
 

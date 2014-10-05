@@ -60,17 +60,17 @@ constexpr uint8_t bitidx(uint8_t bitno)
 
 struct const_bitptr
 {
-    explicit const_bitptr(bit b) : b{b} {}
-    const bit* operator->() const { return &b; }
+    explicit constexpr const_bitptr(bit b) : b{b} {}
+    constexpr const bit* operator->() const { return &b; }
 private:
     bit b;
 };
 
 struct bitptr
 {
-    explicit bitptr(bit b) : b{b} {}
+    explicit constexpr bitptr(bit b) : b{b} {}
     bit* operator->() { return &b; }
-    const bit* operator->() const { return &b; }
+    constexpr const bit* operator->() const { return &b; }
 private:
     bit b;
 };
@@ -154,7 +154,7 @@ struct bit_iterator_impl : bit_iterator_base<UL>
     { this->adjust(-n); return static_cast<T&>(*this); }
 
     friend std::ptrdiff_t operator-(T a, T b) noexcept
-    { return (a.data - b.data)*8
+    { return (a.data - b.data)*sizeof(UL)*8
             +static_cast<int8_t>(a.bitno)
             -static_cast<int8_t>(b.bitno); }
 
@@ -173,20 +173,23 @@ struct bit_iterator_impl : bit_iterator_base<UL>
 template <typename UL>
 struct bitref
 {
-    bitref() noexcept = default;
-    bitref(UL* ul, std::uint8_t bitidx) noexcept : data{ul}, bitidx{bitidx} {}
+    static constexpr UL one = 1;
+
+    constexpr bitref() noexcept = default;
+    constexpr bitref(UL* ul, std::uint8_t bitidx) noexcept :
+        data{ul},
+        bitidx{bitidx}
+    {}
 
     bitref& operator=(bit b) noexcept
     {
         bool bb(b);
-        *data = (*data & ~(1<<bitidx)) | (bb<<bitidx);
+        *data = (*data & ~(one<<bitidx)) | (static_cast<UL>(bb)<<bitidx);
         return *this;
     }
 
-    operator bit() const noexcept
-    {
-        return bit(*data & (1<<bitidx));
-    }
+    constexpr operator bit() const noexcept
+    { return bit(*data & (one<<bitidx)); }
 private:
     UL* data{nullptr};
     /** bitidx = n to represent the nth least
@@ -248,7 +251,7 @@ struct const_bit_iterator : detail::bit_iterator_impl<
     constexpr const_reference operator*() const noexcept
     { return bitref<UL>(this->data, detail::bitidx<BO,UL,EI>(this->bitno)); }
 
-    const_reference operator[](std::size_t n) const noexcept
+    constexpr const_reference operator[](std::size_t n) const noexcept
     { return *(*this+n); }
 };
 

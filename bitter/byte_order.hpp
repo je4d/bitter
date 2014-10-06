@@ -5,12 +5,9 @@ namespace bitter {
 
 enum class byte_order
 {
-    none,          // byte order not applicable
-    big_endian,    // most significant byte first
-    little_endian, // least significant byte first
-    pdp_endian,    // only applies up to 32b
-    msb0 =  big_endian,
-    lsb0 =  little_endian,
+    none, // byte order not applicable
+    msb0, // most significant byte is byte 0
+    lsb0, // least significant byte is byte 0
 };
 
 } // namespace bitter

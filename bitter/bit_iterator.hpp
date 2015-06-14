@@ -4,6 +4,7 @@
 #include "bit.hpp"
 #include "bit_order.hpp"
 #include "byte_order.hpp"
+#include "offset.hpp"
 
 #include <cstddef>
 #include <utility>
@@ -211,6 +212,10 @@ struct bit_iterator : detail::bit_iterator_impl<bit_iterator<BO,UL,YO>,UL>
         base{data, bitno}
     {}
 
+    bit_iterator(UL* data, offset off) :
+        bit_iterator(data + off.element<UL>(), off.bit<UL>())
+    {}
+
     constexpr pointer operator->() const noexcept
     { return pointer(**this); }
 
@@ -237,6 +242,10 @@ struct const_bit_iterator : detail::bit_iterator_impl<
 
     const_bit_iterator(const UL* data, std::uint8_t bitno) noexcept :
         base{const_cast<UL*>(data), bitno}
+    {}
+
+    const_bit_iterator(const UL* data, offset off) :
+        const_bit_iterator(data + off.element<UL>(), off.bit<UL>())
     {}
 
     constexpr const_pointer operator->() const noexcept

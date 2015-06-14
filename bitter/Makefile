@@ -10,7 +10,8 @@ $(eval $(call subdir_start,$(DIR)))
 includes := external/bandit
 
 apps := bit                                                                    \
-        bit_iterator
+        bit_iterator                                                           \
+        offset
 
 ################################################################################
 

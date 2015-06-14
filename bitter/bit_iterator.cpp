@@ -306,6 +306,14 @@ void observing_tests()
         });
     });
 
+    it("supports construction from byte and offset", []{
+        for_each_bit<bo,ul,yo>([](Data* arr, std::size_t b){
+            Iter i_off(arr, bitter::offset(b));
+            Iter i_direct(&arr[b/eb], b%eb);
+            AssertThat(i_off, Equals(i_direct));
+        });
+    });
+
     it("supports copy-construction", []{
         for_each_bit<bo,ul,yo>([](Data* arr, std::size_t b){
             const Iter i1(&arr[b/eb], b%eb);

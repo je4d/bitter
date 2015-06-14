@@ -300,7 +300,7 @@ void observing_tests()
 
     /* Construction and assignment *////////////////////////////////////////////
 
-/*    it("supports construction from byte and bitno", []{
+    it("supports construction from byte and bitno", []{
         for_each_bit<bo,ul,yo>([](Data* arr, std::size_t b){
             Iter i(&arr[b/eb], b%eb);
         });
@@ -362,7 +362,6 @@ void observing_tests()
             AssertThat(*i1, Equals(*i2s));
         });
     });
-    */
 
     /* Dereferencing *//////////////////////////////////////////////////////////
 

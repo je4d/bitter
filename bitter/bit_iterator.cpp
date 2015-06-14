@@ -25,12 +25,14 @@ namespace bitter {
     std::ostream& operator<<(std::ostream& o,
                              const const_bit_iterator<BO,UL,YO>& it)
     {
-        return o << "[0x" << it.data << ", " << int(it.bitno) << "]";
+        void* addr = it.data;
+        return o << "[" << addr << ", " << static_cast<int>(it.bitno) << "]";
     }
     template <bit_order BO, typename UL, byte_order YO>
     std::ostream& operator<<(std::ostream& o, const bit_iterator<BO,UL,YO>& it)
     {
-        return o << "[0x" << it.data << ", " << int(it.bitno) << "]";
+        void* addr = it.data;
+        return o << "[" << addr << ", " << static_cast<int>(it.bitno) << "]";
     }
 }
 

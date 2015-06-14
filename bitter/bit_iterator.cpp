@@ -105,7 +105,7 @@ std::string hexstring(const UL *data, std::size_t n)
     return std::string(ret.data(), retlen);
 }
 
-static constexpr std::size_t testvec_bits = 32*8;
+static constexpr std::ptrdiff_t testvec_bits = 32*8;
 
 template <bit_order BO, typename UL, byte_order YO = byte_order::none>
 struct testvec_;

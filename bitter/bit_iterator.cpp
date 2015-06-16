@@ -710,7 +710,7 @@ go_bandit([]{
     describe("byteidx", []{
         using namespace bitter::detail;
         using namespace bitter;
-        it("supports big endian", [&]{
+        it("supports most-significant-byte-is-0", [&]{
             AssertThat((byteidx<char,byte_order::msb0>(0)),Equals(0));
             AssertThat((byteidx<uint8_t,byte_order::msb0>(0)),Equals(0));
             AssertThat((byteidx<uint16_t,byte_order::msb0>(0)),Equals(1));
@@ -729,7 +729,7 @@ go_bandit([]{
             AssertThat((byteidx<uint64_t,byte_order::msb0>(7)),Equals(0));
         });
 
-        it("supports big endian", [&]{
+        it("supports least-significant-byte-is-0", [&]{
             AssertThat((byteidx<char,byte_order::lsb0>(0)),Equals(0));
             AssertThat((byteidx<uint8_t,byte_order::lsb0>(0)),Equals(0));
             AssertThat((byteidx<uint16_t,byte_order::lsb0>(0)),Equals(0));

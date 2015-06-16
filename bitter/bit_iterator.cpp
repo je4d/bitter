@@ -3,8 +3,9 @@ using namespace bandit;
 
 #include "bit_iterator.hpp"
 
-#include <cstdint>
+#include <bitset>
 #include <cmath>
+#include <cstdint>
 
 using std::size_t;
 using std::ptrdiff_t;
@@ -46,12 +47,13 @@ int promote(uint8_t x)
 namespace std
 {
     template <typename T, std::size_t N>
-    std::ostream& operator<<(std::ostream& o, const std::array<T,N>& a)
+    typename std::enable_if<std::is_integral<T>::value,
+    std::ostream&>::type operator<<(std::ostream& o, const std::array<T,N>& a)
     {
         o << "[";
         bool first = true;
         for (auto& x : a) {
-            o << (first ? "" : ", ") << std::hex << promote(x);
+            o << (first ? "" : ", ") << std::bitset<sizeof(T)*8>(x);
             first = false;
         }
         return o<<"]";

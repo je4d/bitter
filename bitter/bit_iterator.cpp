@@ -297,49 +297,47 @@ constexpr static ptrdiff_t range_index(ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3)
         +b3;
 }
 
+static constexpr std::size_t total_shifted_ranges =
+    range_index(testvec_bits + 1, testvec_bits + 1, 0);
+
 template <bit_order BO, typename UL, byte_order YO, bool Fill>
 struct testvec_partial_shifted_
 {
     using testvec_t = std::array<UL,testvec_bits/(8*sizeof(UL))>;
-    static constexpr std::size_t total_shifted_ranges
-        = range_index(testvec_bits+1,testvec_bits+1,0);
     using shifted_partial_testvecs = std::array<testvec_t,total_shifted_ranges>;
-    static const shifted_partial_testvecs data;
     static constexpr uint8_t element_bits = 8*sizeof(UL);
+    static shifted_partial_testvecs data;
+    static std::array<bool,total_shifted_ranges> data_set;
 };
 
 template <bit_order BO, typename UL, byte_order YO, bool Fill>
-const typename testvec_partial_shifted_<BO,UL,YO,Fill>::shifted_partial_testvecs
-testvec_partial_shifted_<BO,UL,YO,Fill>::data = []{
-        using namespace bitter;
-        shifted_partial_testvecs ret;
-        for_each_range_copy([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3) {
-            testvec_t& tv = ret[range_index(b1,b2,b3)];
-            const testvec_t &base = testvec_partial<BO, UL, YO>(b1, b2);
-            std::vector<bitter::bit> test_data(b2-b1);
-            std::copy(
-                const_bit_iterator<BO, UL, YO>(base.data(), offset(b1)),
-                const_bit_iterator<BO, UL, YO>(base.data(), offset(b2)),
-                begin(test_data));
-
-            std::fill(bit_iterator<BO, UL, YO>(tv.data(), 0),
-                      bit_iterator<BO, UL, YO>(tv.data(), offset(b3)),
-                      bit(Fill));
-            auto written_to =
-                std::copy(begin(test_data), end(test_data),
-                          bit_iterator<BO, UL, YO>(tv.data(), offset(b3)));
-            std::fill(written_to,
-                      bit_iterator<BO, UL, YO>(tv.data(), offset(testvec_bits)),
-                      bit(Fill));
-        });
-        return ret;
-    }();
+typename testvec_partial_shifted_<BO,UL,YO,Fill>::shifted_partial_testvecs
+testvec_partial_shifted_<BO,UL,YO,Fill>::data{};
 
 template <bit_order BO, typename UL, byte_order YO, bool Fill>
-constexpr const std::array<UL,testvec_bits/8/sizeof(UL)>&
+std::array<bool, total_shifted_ranges>
+testvec_partial_shifted_<BO, UL, YO, Fill>::data_set{};
+
+template <bit_order BO, typename UL, byte_order YO, bool Fill>
+const std::array<UL,testvec_bits/8/sizeof(UL)>&
 testvec_partial_shifted(ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3)
 {
-    return testvec_partial_shifted_<BO,UL,YO,Fill>::data[range_index(b1,b2,b3)];
+    using namespace bitter;
+    using storage = testvec_partial_shifted_<BO, UL, YO, Fill>;
+    auto idx      = range_index(b1, b2, b3);
+    auto &ret = storage::data[idx];
+    if (storage::data_set[idx])
+        return ret;
+
+    ret = testvec_shifted<BO, UL, YO>((b1 - b3 + testvec_bits) % testvec_bits);
+    std::fill(bit_iterator<BO, UL, YO>(ret.data(), 0),
+              bit_iterator<BO, UL, YO>(ret.data(), offset(b3)),
+              bit(Fill));
+    std::fill(bit_iterator<BO, UL, YO>(ret.data(), offset(b3 + (b2-b1))),
+              bit_iterator<BO, UL, YO>(ret.data(), offset(testvec_bits)),
+              bit(Fill));
+    storage::data_set[idx] = true;
+    return ret;
 }
 
 bitter::bit expval(std::size_t pos)

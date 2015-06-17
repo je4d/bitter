@@ -212,9 +212,6 @@ constexpr const std::array<UL,testvec_bits/8/sizeof(UL)>& testvec()
     return testvec_<BO,UL,YO>::data;
 }
 
-/* testvec_shifted
- * data[i] is rotated left by i bits
- */
 template <bit_order BO, typename UL, byte_order YO = byte_order::none>
 struct testvec_shifted_ {
     using testvec_t = std::array<UL,testvec_bits/(8*sizeof(UL))>;
@@ -227,21 +224,31 @@ struct testvec_shifted_ {
 template <bit_order BO, typename UL, byte_order YO>
 const typename testvec_shifted_<BO,UL,YO>::shifted_testvecs
 testvec_shifted_<BO,UL,YO>::data = []{
+        using namespace bitter;
         const auto& unshifted = testvec<BO,UL,YO>();
-        bitvec as_bits(testvec_bits);
-        std::copy(
-            bitter::bit_iterator<BO,UL,YO>(begin(unshifted),0),
-            bitter::bit_iterator<BO,UL,YO>(end(unshifted),0),
-            begin(as_bits));
+        std::array<bit,testvec_bits> as_bits;
+        std::copy(const_bit_iterator<BO, UL, YO>(begin(unshifted), 0),
+                  const_bit_iterator<BO, UL, YO>(end(unshifted), 0),
+                  begin(as_bits));
         shifted_testvecs ret;
         for (std::size_t i = 0; i < testvec_bits; ++i) {
             testvec_t& tv = ret[i];
-            auto it = std::copy(next(begin(as_bits), i), end(as_bits),
-                                bitter::bit_iterator<BO, UL, YO>(tv.data(), 0));
-            std::copy(begin(as_bits), next(begin(as_bits),i), it);
+            auto it = std::copy(std::next(begin(as_bits), i), end(as_bits),
+                                bit_iterator<BO, UL, YO>(tv.data(), 0));
+            std::copy(begin(as_bits), std::next(begin(as_bits),i), it);
         }
         return ret;
     }();
+
+/* testvec_shifted
+ * testvec_shifted(i) is rotated left by i bits
+ */
+template <bit_order BO, typename UL, byte_order YO = byte_order::none>
+constexpr const std::array<UL,testvec_bits/8/sizeof(UL)>&
+testvec_shifted(std::ptrdiff_t shift)
+{
+    return testvec_shifted_<BO,UL,YO>::data[shift];
+}
 
 template <typename F>
 void for_each_bit_range(F&& f)

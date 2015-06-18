@@ -6,9 +6,9 @@ using namespace bandit;
 #include "offset.hpp"
 
 template <typename UL>
-void test_element_and_bit_numbers()
+void test_element_and_bit_numbers(int from, int to)
 {
-    for (int i = -1000; i <= 1000; ++i)
+    for (int i = from; i <= to; ++i)
     {
         bitter::offset o(i);
         auto e = o.element<UL>();
@@ -41,12 +41,26 @@ go_bandit([]{
             std::ptrdiff_t i_neg = o_neg;
             AssertThat(i_neg, Equals(-1234567890));
         });
-        it("generates element and bit offsets for positive numbers", []{
-            test_element_and_bit_numbers<char>();
-            test_element_and_bit_numbers<unsigned char>();
-            test_element_and_bit_numbers<unsigned int>();
-            test_element_and_bit_numbers<unsigned long>();
-            test_element_and_bit_numbers<unsigned long long>();
+        it("generates correct element and bit numbers for positive offsets", []{
+            test_element_and_bit_numbers<char>(1,1000);
+            test_element_and_bit_numbers<unsigned char>(1,1000);
+            test_element_and_bit_numbers<unsigned int>(1,1000);
+            test_element_and_bit_numbers<unsigned long>(1,1000);
+            test_element_and_bit_numbers<unsigned long long>(1,1000);
+        });
+        it("generates correct element and bit numbers for negative offsets", []{
+            test_element_and_bit_numbers<char>(-1000,-1);
+            test_element_and_bit_numbers<unsigned char>(-1000,-1);
+            test_element_and_bit_numbers<unsigned int>(-1000,-1);
+            test_element_and_bit_numbers<unsigned long>(-1000,-1);
+            test_element_and_bit_numbers<unsigned long long>(-1000,-1);
+        });
+        it("generates correct element and bit numbers for zero offset", []{
+            test_element_and_bit_numbers<char>(0,0);
+            test_element_and_bit_numbers<unsigned char>(0,0);
+            test_element_and_bit_numbers<unsigned int>(0,0);
+            test_element_and_bit_numbers<unsigned long>(0,0);
+            test_element_and_bit_numbers<unsigned long long>(0,0);
         });
     });
 });

@@ -23,6 +23,7 @@ $(DIR)/all: $(DIR)/test
 $(DIR)/test: %/test: $(apps_tgt)
 	build/$*/bit --reporter=spec
 	build/$*/bit_iterator --reporter=spec
+	build/$*/offset --reporter=spec
 
 DIR := $(DIR_$(DIR))
 else

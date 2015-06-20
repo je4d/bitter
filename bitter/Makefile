@@ -11,6 +11,7 @@ includes := external/bandit
 
 apps := bit                                                                    \
         bit_iterator                                                           \
+        bit_iterator_copy                                                      \
         offset
 
 ################################################################################
@@ -23,6 +24,7 @@ $(DIR)/all: $(DIR)/test
 $(DIR)/test: %/test: $(apps_tgt)
 	build/$*/bit --reporter=spec
 	build/$*/bit_iterator --reporter=spec
+	build/$*/bit_iterator_copy --reporter=spec
 	build/$*/offset --reporter=spec
 
 DIR := $(DIR_$(DIR))

@@ -2,6 +2,7 @@
 using namespace bandit;
 
 #include "bit_iterator.hpp"
+#include "test_bit_iterator.hpp"
 
 #include <bitset>
 #include <cmath>
@@ -14,57 +15,6 @@ using std::size_t;
 using std::ptrdiff_t;
 using bit_order = bitter::bit_order;
 using byte_order = bitter::byte_order;
-
-namespace bitter {
-    std::ostream&operator<<(std::ostream& o,const bit& b)
-    {
-        return o << (b ? "1_b" : "0_b");
-    }
-    template <typename UL>
-    std::ostream&operator<<(std::ostream& o,const bitref<UL>& b)
-    {
-        return o << (bit(b) ? "1_b" : "0_b");
-    }
-    template <bit_order BO, typename UL, byte_order YO>
-    std::ostream& operator<<(std::ostream& o,
-                             const const_bit_iterator<BO,UL,YO>& it)
-    {
-        void* addr = it.data;
-        return o << "[" << addr << ", " << static_cast<int>(it.bitno) << "]";
-    }
-    template <bit_order BO, typename UL, byte_order YO>
-    std::ostream& operator<<(std::ostream& o, const bit_iterator<BO,UL,YO>& it)
-    {
-        void* addr = it.data;
-        return o << "[" << addr << ", " << static_cast<int>(it.bitno) << "]";
-    }
-}
-
-template <typename T>
-const T& promote(const T& t)
-{ return t; }
-int promote(char x)
-{ return x; }
-int promote(uint8_t x)
-{ return x; }
-namespace std
-{
-    template <typename T, std::size_t N>
-    typename std::enable_if<std::is_integral<T>::value,
-    std::ostream&>::type operator<<(std::ostream& o, const std::array<T,N>& a)
-    {
-        o << "[";
-        bool first = true;
-        for (auto& x : a) {
-            o << (first ? "" : ", ") << std::bitset<sizeof(T)*8>(x);
-            first = false;
-        }
-        return o<<"]";
-    }
-}
-
-const unsigned char* operator "" _uc(const char* str, std::size_t len)
-{ return reinterpret_cast<const unsigned char*>(str); }
 
 using bitvec = std::vector<bitter::bit>;
 bitvec make_bitvec(std::initializer_list<int> il)
@@ -92,11 +42,6 @@ std::string hexstring(uint8_t (&data)[N])
     return std::string(ret);
 }
 
-template <typename T>
-struct ArrayDelete {
-    void operator()(T*t) { delete[] t; }
-};
-
 template <typename UL>
 std::string hexstring(const UL *data, std::size_t n)
 {
@@ -110,234 +55,6 @@ std::string hexstring(const UL *data, std::size_t n)
     });
     *prev(end(ret)) = 0;
     return std::string(ret.data(), retlen);
-}
-
-static constexpr std::ptrdiff_t testvec_bits = 32*4;
-
-template <bit_order BO, typename UL, byte_order YO = byte_order::none>
-struct testvec_;
-
-template<> struct testvec_<bit_order::lsb0,uint8_t> {
-    static constexpr std::array<uint8_t,testvec_bits/8> data {{
-        0xa2, 0x2b, 0x34, 0x6c, 0xc9, 0xf8, 0x1f, 0xce,
-        0x4c, 0xd2, 0x4a, 0x55, 0x55, 0xb5, 0x5a, 0x6b }}; };
-constexpr std::array<uint8_t,testvec_bits/8>
-     testvec_<bit_order::lsb0,uint8_t>::data;
-template<> struct testvec_<bit_order::lsb0,uint16_t,byte_order::lsb0> {////
-    static constexpr std::array<uint16_t,testvec_bits/16> data {{
-        0x2ba2, 0x6c34, 0xf8c9, 0xce1f, 0xd24c, 0x554a, 0xb555, 0x6b5a }}; };
-constexpr std::array<uint16_t,testvec_bits/16>
-     testvec_<bit_order::lsb0,uint16_t,byte_order::lsb0>::data;
-template<> struct testvec_<bit_order::lsb0,uint32_t,byte_order::lsb0> {
-    static constexpr std::array<uint32_t,testvec_bits/32> data {{
-        0x6c342ba2, 0xce1ff8c9, 0x554ad24c, 0x6b5ab555 }}; };
-constexpr std::array<uint32_t,testvec_bits/32>
-     testvec_<bit_order::lsb0,uint32_t,byte_order::lsb0>::data;
-template<> struct testvec_<bit_order::lsb0,uint64_t,byte_order::lsb0> {
-    static constexpr std::array<uint64_t,testvec_bits/64> data {{
-        0xce1ff8c96c342ba2, 0x6b5ab555554ad24c }}; };
-constexpr std::array<uint64_t,testvec_bits/64>
-     testvec_<bit_order::lsb0,uint64_t,byte_order::lsb0>::data;
-template<> struct testvec_<bit_order::lsb0,uint16_t,byte_order::msb0> {
-    static constexpr std::array<uint16_t,testvec_bits/16> data {{
-        0xa22b, 0x346c, 0xc9f8, 0x1fce, 0x4cd2, 0x4a55, 0x55b5, 0x5a6b }}; };
-constexpr std::array<uint16_t,testvec_bits/16>
-     testvec_<bit_order::lsb0,uint16_t,byte_order::msb0>::data;
-template<> struct testvec_<bit_order::lsb0,uint32_t,byte_order::msb0> {
-    static constexpr std::array<uint32_t,testvec_bits/32> data {{
-        0xa22b346c, 0xc9f81fce, 0x4cd24a55, 0x55b55a6b }}; };
-constexpr std::array<uint32_t,testvec_bits/32>
-     testvec_<bit_order::lsb0,uint32_t,byte_order::msb0>::data;
-template<> struct testvec_<bit_order::lsb0,uint64_t,byte_order::msb0> {
-    static constexpr std::array<uint64_t,testvec_bits/64> data {{
-        0xa22b346cc9f81fce, 0x4cd24a5555b55a6b }}; };
-constexpr std::array<uint64_t,testvec_bits/64>
-     testvec_<bit_order::lsb0,uint64_t,byte_order::msb0>::data;
-template<> struct testvec_<bit_order::msb0,uint8_t> {
-    static constexpr std::array<uint8_t,testvec_bits/8> data {{
-        0x45, 0xd4, 0x2c, 0x36, 0x93, 0x1f, 0xf8, 0x73,
-        0x32, 0x4b, 0x52, 0xaa, 0xaa, 0xad, 0x5a, 0xd6 }}; };
-constexpr std::array<uint8_t,testvec_bits/8>
-     testvec_<bit_order::msb0,uint8_t>::data;
-template<> struct testvec_<bit_order::msb0,uint16_t,byte_order::lsb0> {
-    static constexpr std::array<uint16_t,testvec_bits/16> data {{
-        0xd445, 0x362c, 0x1f93, 0x73f8, 0x4b32, 0xaa52, 0xadaa, 0xd65a }}; };
-constexpr std::array<uint16_t,testvec_bits/16>
-     testvec_<bit_order::msb0,uint16_t,byte_order::lsb0>::data;
-template<> struct testvec_<bit_order::msb0,uint32_t,byte_order::lsb0> {
-    static constexpr std::array<uint32_t,testvec_bits/32> data {{
-        0x362cd445, 0x73f81f93, 0xaa524b32, 0xd65aadaa }}; };
-constexpr std::array<uint32_t,testvec_bits/32>
-     testvec_<bit_order::msb0,uint32_t,byte_order::lsb0>::data;
-template<> struct testvec_<bit_order::msb0,uint64_t,byte_order::lsb0> {
-    static constexpr std::array<uint64_t,testvec_bits/64> data {{
-        0x73f81f93362cd445, 0xd65aadaaaa524b32 }}; };
-constexpr std::array<uint64_t,testvec_bits/64>
-     testvec_<bit_order::msb0,uint64_t,byte_order::lsb0>::data;
-template<> struct testvec_<bit_order::msb0,uint16_t,byte_order::msb0> {
-    static constexpr std::array<uint16_t,testvec_bits/16> data {{
-        0x45d4, 0x2c36, 0x931f, 0xf873, 0x324b, 0x52aa, 0xaaad, 0x5ad6 }}; };
-constexpr std::array<uint16_t,testvec_bits/16>
-     testvec_<bit_order::msb0,uint16_t,byte_order::msb0>::data;
-template<> struct testvec_<bit_order::msb0,uint32_t,byte_order::msb0> {
-    static constexpr std::array<uint32_t,testvec_bits/32> data {{
-        0x45d42c36, 0x931ff873, 0x324b52aa, 0xaaad5ad6 }}; };
-constexpr std::array<uint32_t,testvec_bits/32>
-     testvec_<bit_order::msb0,uint32_t,byte_order::msb0>::data;
-template<> struct testvec_<bit_order::msb0,uint64_t,byte_order::msb0> {
-    static constexpr std::array<uint64_t,testvec_bits/64> data {{
-        0x45d42c36931ff873, 0x324b52aaaaad5ad6 }}; };
-constexpr std::array<uint64_t,testvec_bits/64>
-     testvec_<bit_order::msb0,uint64_t,byte_order::msb0>::data;
-
-template <bit_order BO, typename UL, byte_order YO = byte_order::none>
-constexpr const std::array<UL,testvec_bits/8/sizeof(UL)>& testvec()
-{
-    return testvec_<BO,UL,YO>::data;
-}
-
-template <bit_order BO, typename UL, byte_order YO = byte_order::none>
-struct testvec_shifted_ {
-    using testvec_t = std::array<UL,testvec_bits/(8*sizeof(UL))>;
-    static constexpr std::size_t shifts = testvec_bits;
-    using shifted_testvecs = std::array<testvec_t,shifts>;
-    static const shifted_testvecs data;
-    static constexpr uint8_t element_bits = 8*sizeof(UL);
-};
-
-template <bit_order BO, typename UL, byte_order YO>
-const typename testvec_shifted_<BO,UL,YO>::shifted_testvecs
-testvec_shifted_<BO,UL,YO>::data = []{
-        using namespace bitter;
-        const auto& unshifted = testvec<BO,UL,YO>();
-        std::array<bit,testvec_bits> as_bits;
-        std::copy(const_bit_iterator<BO, UL, YO>(begin(unshifted), 0),
-                  const_bit_iterator<BO, UL, YO>(end(unshifted), 0),
-                  begin(as_bits));
-        shifted_testvecs ret;
-        for (std::size_t i = 0; i < testvec_bits; ++i) {
-            testvec_t& tv = ret[i];
-            auto it = std::copy(std::next(begin(as_bits), i), end(as_bits),
-                                bit_iterator<BO, UL, YO>(tv.data(), 0));
-            std::copy(begin(as_bits), std::next(begin(as_bits),i), it);
-        }
-        return ret;
-    }();
-
-/* testvec_shifted
- * testvec_shifted(i) is rotated left by i bits
- */
-template <bit_order BO, typename UL, byte_order YO = byte_order::none>
-constexpr const std::array<UL,testvec_bits/8/sizeof(UL)>&
-testvec_shifted(std::ptrdiff_t shift)
-{
-    return testvec_shifted_<BO,UL,YO>::data[shift];
-}
-
-template <typename F>
-void for_each_bit_range(F&& f)
-{
-    for (size_t b1 = 0; b1 <= testvec_bits; ++b1)
-        for (size_t b2 = b1; b2 <= testvec_bits; ++b2)
-            std::forward<F>(f)(b1, b2);
-}
-
-template <typename F>
-void for_each_range_copy(F&& f)
-{
-    for_each_bit_range([&](std::ptrdiff_t b1, std::ptrdiff_t b2){
-        for (std::ptrdiff_t b3 = 0; b3 < testvec_bits-(b2-b1)+1; ++b3)
-            std::forward<F>(f)(b1, b2, b3);
-    });
-}
-
-constexpr static std::size_t range_index(std::size_t b1, std::size_t b2)
-{
-    return (b1*(testvec_bits+1)-(b1*(b1-1))/2)+(b2-b1);
-}
-
-template <bit_order BO, typename UL, byte_order YO = byte_order::none>
-struct testvec_partial_
-{
-    using testvec_t = std::array<UL,testvec_bits/(8*sizeof(UL))>;
-    static constexpr std::size_t total_ranges
-        = range_index(testvec_bits,testvec_bits)+1;
-    using partial_testvecs = std::array<testvec_t,total_ranges>;
-    static const partial_testvecs data;
-};
-
-template <bit_order BO, typename UL, byte_order YO>
-const typename testvec_partial_<BO,UL,YO>::partial_testvecs
-testvec_partial_<BO,UL,YO>::data = []{
-        static constexpr std::array<bitter::bit,testvec_bits> zeros{};
-        partial_testvecs ret;
-        for_each_bit_range([&](std::ptrdiff_t b1, std::ptrdiff_t b2) {
-            testvec_t& tv = ret[range_index(b1,b2)];
-            tv = testvec<BO,UL,YO>();
-            std::copy(begin(zeros), std::next(begin(zeros),b1),
-                bitter::bit_iterator<BO,UL,YO>(tv.data(),0));
-            std::copy(begin(zeros), std::next(begin(zeros),testvec_bits-b2),
-                bitter::bit_iterator<BO,UL,YO>(
-                    tv.data() + b2/(8*sizeof(UL)), b2%(8*sizeof(UL))));
-        });
-        return ret;
-    }();
-
-template <bit_order BO, typename UL, byte_order YO = byte_order::none>
-constexpr const std::array<UL,testvec_bits/8/sizeof(UL)>&
-testvec_partial(ptrdiff_t b1, ptrdiff_t b2)
-{
-    return testvec_partial_<BO,UL,YO>::data[range_index(b1,b2)];
-}
-
-constexpr static ptrdiff_t range_index(ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3)
-{
-    return b1*(3*testvec_bits*testvec_bits+9*testvec_bits+7-b1*b1)/6
-        +((b2-b1)*(2*testvec_bits-b2+b1+3))/2
-        +b3;
-}
-
-static constexpr std::size_t total_shifted_ranges =
-    range_index(testvec_bits + 1, testvec_bits + 1, 0);
-
-template <bit_order BO, typename UL, byte_order YO, bool Fill>
-struct testvec_partial_shifted_
-{
-    using testvec_t = std::array<UL,testvec_bits/(8*sizeof(UL))>;
-    using shifted_partial_testvecs = std::array<testvec_t,total_shifted_ranges>;
-    static constexpr uint8_t element_bits = 8*sizeof(UL);
-    static shifted_partial_testvecs data;
-    static std::array<bool,total_shifted_ranges> data_set;
-};
-
-template <bit_order BO, typename UL, byte_order YO, bool Fill>
-typename testvec_partial_shifted_<BO,UL,YO,Fill>::shifted_partial_testvecs
-testvec_partial_shifted_<BO,UL,YO,Fill>::data{};
-
-template <bit_order BO, typename UL, byte_order YO, bool Fill>
-std::array<bool, total_shifted_ranges>
-testvec_partial_shifted_<BO, UL, YO, Fill>::data_set{};
-
-template <bit_order BO, typename UL, byte_order YO, bool Fill>
-const std::array<UL,testvec_bits/8/sizeof(UL)>&
-testvec_partial_shifted(ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3)
-{
-    using namespace bitter;
-    using storage = testvec_partial_shifted_<BO, UL, YO, Fill>;
-    auto idx      = range_index(b1, b2, b3);
-    auto &ret = storage::data[idx];
-    if (storage::data_set[idx])
-        return ret;
-
-    ret = testvec_shifted<BO, UL, YO>((b1 - b3 + testvec_bits) % testvec_bits);
-    std::fill(bit_iterator<BO, UL, YO>(ret.data(), 0),
-              bit_iterator<BO, UL, YO>(ret.data(), offset(b3)),
-              bit(Fill));
-    std::fill(bit_iterator<BO, UL, YO>(ret.data(), offset(b3 + (b2-b1))),
-              bit_iterator<BO, UL, YO>(ret.data(), offset(testvec_bits)),
-              bit(Fill));
-    storage::data_set[idx] = true;
-    return ret;
 }
 
 bitter::bit expval(std::size_t pos)
@@ -383,25 +100,6 @@ void for_each_bit_pair(F&& f)
         for (ptrdiff_t b2 = 0; b2 < testvec_bits; ++b2)
             std::forward<F>(f)(data.data(), b1, b2);
 }
-
-template <typename T>
-struct bit_iterator_traits;
-
-template <bitter::bit_order BO, typename UL, bitter::byte_order YO>
-struct bit_iterator_traits<bitter::bit_iterator<BO,UL,YO>>
-{
-    static constexpr bitter::bit_order bit_order = BO;
-    using underlying_type = UL;
-    static constexpr bitter::byte_order byte_order = YO;
-};
-
-template <bitter::bit_order BO, typename UL, bitter::byte_order YO>
-struct bit_iterator_traits<bitter::const_bit_iterator<BO,UL,YO>>
-{
-    static constexpr bitter::bit_order bit_order = BO;
-    using underlying_type = UL;
-    static constexpr bitter::byte_order byte_order = YO;
-};
 
 template <class Iter>
 void core_tests()
@@ -833,43 +531,6 @@ void single_iterator_one_bitorder_tests()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
-// copy tests
-
-template <class DataIn, class IterIn, class IterOut>
-void copy_fwd_fwd()
-{
-    using ul_in = typename bit_iterator_traits<IterIn>::underlying_type;
-    using ul_out = typename bit_iterator_traits<IterOut>::underlying_type;
-    static constexpr bit_order  bo_in =bit_iterator_traits<IterIn>::bit_order;
-    static constexpr bit_order  bo_out=bit_iterator_traits<IterOut>::bit_order;
-    static constexpr byte_order yo_in =bit_iterator_traits<IterIn>::byte_order;
-    static constexpr byte_order yo_out=bit_iterator_traits<IterOut>::byte_order;
-    static constexpr uint8_t eb_in = 8 * sizeof(ul_in); // element bits
-    static constexpr uint8_t eb_out = 8 * sizeof(ul_out); // element bits
-//    static constexpr std::size_t elements_in = testvec_bits/(8*sizeof(ul_in));
-    static constexpr std::size_t elements_out = testvec_bits/(8*sizeof(ul_out));
-
-    DataIn* data_in_base = begin(testvec<bo_in,ul_in,yo_in>());
-    for_each_range_copy([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3){
-//        std::cout << "(" << (int)b1 << ", " << (int)b2 << ", " << (int)b3 << ")";
-        std::array<ul_out,elements_out> output{};
-        std::array<ul_out,elements_out> expected =
-            testvec_partial_shifted<bo_out, ul_out, yo_out, false>(b1, b2, b3);
-        IterIn it(data_in_base+(b1/eb_in), b1%eb_in);
-        IterIn end(data_in_base+(b2/eb_in), b2%eb_in);
-        IterOut out(begin(output)+(b3/eb_out), b3%eb_out);
-        copy(it, end, out);
-        if (output == expected) {
-//            std::cout << " OK\n"  << expected << "\n";
-        } else {
-            std::cout << "\n" << output << "\n" << expected << "\n";
-        }
-        AssertThat(output, Equals(expected));
-    });
-}
-
-
-////////////////////////////////////////////////////////////////////////////////
 // main
 
 go_bandit([]{
@@ -878,12 +539,6 @@ go_bandit([]{
     describe("msb0 iterators", single_iterator_one_bitorder_tests<msb0>);
     static constexpr bit_order lsb0 = bit_order::lsb0;
     describe("lsb0 iterators", single_iterator_one_bitorder_tests<lsb0>);
-    it("does a copy", []{
-        copy_fwd_fwd<
-            const uint64_t,
-            const_bit_iterator<bit_order::lsb0,uint64_t,byte_order::msb0>,
-            bit_iterator<bit_order::msb0,uint8_t>>();
-            });
     describe("byteidx", []{
         using namespace bitter::detail;
         using namespace bitter;

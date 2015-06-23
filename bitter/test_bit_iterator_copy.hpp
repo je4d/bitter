@@ -135,10 +135,11 @@ void copy_fwd_fwd()
     static constexpr byte_order yo_out=bit_iterator_traits<IterOut>::byte_order;
     static constexpr uint8_t eb_in = 8 * sizeof(ul_in); // element bits
     static constexpr uint8_t eb_out = 8 * sizeof(ul_out); // element bits
-//    static constexpr std::size_t elements_in = testvec_bits/(8*sizeof(ul_in));
+    static constexpr std::size_t elements_in = testvec_bits/(8*sizeof(ul_in));
     static constexpr std::size_t elements_out = testvec_bits/(8*sizeof(ul_out));
 
-    DataIn* data_in_base = begin(testvec<bo_in,ul_in,yo_in>());
+    std::array<ul_in,elements_in> data_in = testvec<bo_in,ul_in,yo_in>();
+    DataIn* data_in_base = begin(data_in);
     for_each_range_copy([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3){
 //        std::cout << "(" << (int)b1 << ", " << (int)b2 << ", " << (int)b3 << ")";
         std::array<ul_out,elements_out> output{};

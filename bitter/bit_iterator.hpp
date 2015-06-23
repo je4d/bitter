@@ -183,6 +183,13 @@ struct bitref
         return *this;
     }
 
+    // In an expression such as *bit_iter1 = *bit_iter2, both the RHS and LHS
+    // are bitrefs. The default assignment operator won't do what we want here.
+    bitref& operator=(const bitref& br)
+    {
+        return (*this) = static_cast<bit>(br);
+    }
+
     constexpr operator bit() const noexcept
     { return bit(*data & (one<<bitidx)); }
 private:

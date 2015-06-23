@@ -144,6 +144,7 @@ struct bit_iterator_traits<bitter::bit_iterator<BO,UL,YO>>
 {
     static constexpr bitter::bit_order bit_order = BO;
     using underlying_type = UL;
+    using const_underlying_type = UL;
     static constexpr bitter::byte_order byte_order = YO;
 };
 
@@ -152,6 +153,7 @@ struct bit_iterator_traits<bitter::const_bit_iterator<BO,UL,YO>>
 {
     static constexpr bitter::bit_order bit_order = BO;
     using underlying_type = UL;
+    using const_underlying_type = const UL;
     static constexpr bitter::byte_order byte_order = YO;
 };
 

@@ -2,5 +2,5 @@ subdirs := bitter
 includes := external
 include modules/jake/jake.mf
 #CC=clang++
-CXXFLAGS = $(CXXFLAGS_BASE) -fsanitize=address
+CXXFLAGS = $(CXXFLAGS_BASE) -fsanitize=address -O
 all: test

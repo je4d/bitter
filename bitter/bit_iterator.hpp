@@ -231,8 +231,8 @@ struct const_bit_iterator : detail::bit_iterator_impl<
                                 const_bit_iterator<BO,UL,YO>,UL>
 {
     using base = detail::bit_iterator_impl< const_bit_iterator<BO,UL,YO>,UL>;
-    using reference       = bit;
-    using const_reference = bit;
+    using reference       = const bit;
+    using const_reference = const bit;
     using pointer         = detail::const_bitptr;
     using const_pointer   = detail::const_bitptr;
     using iterator        = const_bit_iterator;

@@ -494,12 +494,35 @@ void mutating_tests()
     }
 }
 
+namespace sfinae {
+template <typename T, typename U>
+auto deref_assign(T &&t,
+                  U &&u) -> decltype(*std::forward<T>(t) = std::forward<U>(u),
+                                     std::declval<std::true_type>())
+{
+    return {};
+}
+std::false_type deref_assign(...) { return {}; }
+}
+
+template <class Iter>
+void const_tests()
+{
+    it("cannot be dereferenced and assigned to", [] {
+        Iter it;
+        AssertThat(std::remove_reference<decltype(
+                       sfinae::deref_assign(it, *it))>::type::value,
+                   Equals(false));
+    });
+}
+
 template <bit_order BO, typename UL, byte_order YO = byte_order::none>
 void single_iterator_config_tests()
 {
     using namespace bitter;
     describe("const_bit_iterator<bit_order,underlier,byte_order>", []{
         core_tests<const_bit_iterator<BO,UL,YO>>();
+        const_tests<const_bit_iterator<BO,UL,YO>>();
         describe("over const array",
             &observing_tests<const UL,const_bit_iterator<BO,UL,YO>>);
         describe("over mutable array",

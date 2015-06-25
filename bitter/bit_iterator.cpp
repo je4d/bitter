@@ -77,7 +77,7 @@ const std::array<bitter::bit,testvec_bits> expvals =
 template <bit_order BO, typename UL, byte_order YO, typename F>
 void for_each_bit(F&& f)
 {
-    std::array<UL,testvec_bits/(8*sizeof(UL))> data = testvec<BO,UL,YO>();
+    testvec_t<UL> data = testvec<BO,UL,YO>();
     for (std::size_t b = 0; b < testvec_bits; ++b)
         std::forward<F>(f)(data.data(), b);
 }
@@ -85,7 +85,7 @@ void for_each_bit(F&& f)
 template <bit_order BO, typename UL, byte_order YO, typename F>
 std::array<bitter::bit,testvec_bits> for_each_bit_check(F&& f)
 {
-    std::array<UL,testvec_bits/(8*sizeof(UL))> data = testvec<BO,UL,YO>();
+    testvec_t<UL> data = testvec<BO,UL,YO>();
     std::array<bitter::bit,testvec_bits> out;
     for (std::size_t b = 0; b < testvec_bits; ++b)
         out[b] = std::forward<F>(f)(data.data(), b);
@@ -95,7 +95,7 @@ std::array<bitter::bit,testvec_bits> for_each_bit_check(F&& f)
 template <bitter::bit_order BO, typename UL, byte_order YO, typename F>
 void for_each_bit_pair(F&& f)
 {
-    std::array<UL,testvec_bits/(8*sizeof(UL))> data = testvec<BO,UL,YO>();
+    testvec_t<UL> data = testvec<BO,UL,YO>();
     for (ptrdiff_t b1 = 0; b1 < testvec_bits; ++b1)
         for (ptrdiff_t b2 = 0; b2 < testvec_bits; ++b2)
             std::forward<F>(f)(data.data(), b1, b2);
@@ -418,9 +418,9 @@ void observing_tests()
 }
 
 template <typename UL, typename F>
-std::array<UL,testvec_bits/(8*sizeof(UL))> for_each_bit2(F&& f)
+testvec_t<UL> for_each_bit2(F&& f)
 {
-    std::array<UL,testvec_bits/(8*sizeof(UL))> ret{};
+    testvec_t<UL> ret{};
     for (std::size_t b = 0; b < 8*sizeof(UL)*ret.size(); ++b)
         std::forward<F>(f)(ret.data(), b);
     return ret;

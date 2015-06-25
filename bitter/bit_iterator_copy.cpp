@@ -22,8 +22,7 @@ struct test_copy_iterator_types_fixed_itt
 template <typename InIter, typename OutIter>
 void test_copy_fixed_iti_ito()
 {
-    using DataIn = typename bit_iterator_traits<InIter>::const_underlying_type;
-    it("copies correctly", &copy_fwd_fwd<DataIn, InIter, OutIter>);
+    it("copies correctly", &copy_fwd_fwd<InIter, OutIter>);
 }
 
 template <typename InIter, template <typename UL, byte_order YO> class OutIter>
@@ -68,11 +67,11 @@ void test_copy_fixed_iti_itto()
 template <typename InIter>
 void test_copy_fixed_iti()
 {
-//    using types = test_copy_iterator_types;
+    using types = test_copy_iterator_types;
     describe("copying to a bit_iterator", [] {
         test_copy_fixed_iti_itto<InIter, bitter::bit_iterator>(); });
-//    describe("copying to a std::reverse_iterator<bit_iterator>", [] {
-//        test_copy_fixed_iti_itto<InIter, types::reverse_bit_iterator>(); });
+    describe("copying to a std::reverse_iterator<bit_iterator>", [] {
+        test_copy_fixed_iti_itto<InIter, types::reverse_bit_iterator>(); });
 }
 
 template <template <typename UL, byte_order YO> class InIter>
@@ -106,15 +105,15 @@ void test_copy_fixed_itti()
 
 void test_copy_all()
 {
-//    using types = test_copy_iterator_types;
+    using types = test_copy_iterator_types;
     describe("copying from a bit_iterator",
              [] { test_copy_fixed_itti<bitter::bit_iterator>(); });
-//    describe("copying from a std::reverse_iterator<bit_iterator>",
-//             [] { test_copy_fixed_itti<types::reverse_bit_iterator>(); });
+    describe("copying from a std::reverse_iterator<bit_iterator>",
+             [] { test_copy_fixed_itti<types::reverse_bit_iterator>(); });
     describe("copying from a const_bit_iterator",
              [] { test_copy_fixed_itti<bitter::const_bit_iterator>(); });
-//    describe("copying from a std::reverse_iterator<const_bit_iterator>",
-//             [] { test_copy_fixed_itti<types::const_reverse_bit_iterator>(); });
+    describe("copying from a std::reverse_iterator<const_bit_iterator>",
+             [] { test_copy_fixed_itti<types::const_reverse_bit_iterator>(); });
 }
 
 go_bandit([]{

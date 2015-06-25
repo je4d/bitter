@@ -103,39 +103,47 @@ testvec_t<UL> testvec_partial_shifted(ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3)
     return ret;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// copy tests
+template <typename T, typename D>
+T make_bit_iterator(D&& d, bitter::offset o)
+{
+    using fwd_it = typename bit_iterator_traits<T>::forward_iterator;
+    constexpr bool rev = bit_iterator_traits<T>::is_reverse;
+    return rev ? T{fwd_it{end(d), -o}} : T{fwd_it{begin(d), o}};
+}
 
-template <class DataIn, class IterIn, class IterOut>
+template <class IterIn, class IterOut>
 void copy_fwd_fwd()
 {
-    using ul_in = typename bit_iterator_traits<IterIn>::underlying_type;
-    using ul_out = typename bit_iterator_traits<IterOut>::underlying_type;
-    static constexpr bit_order  bo_in =bit_iterator_traits<IterIn>::bit_order;
-    static constexpr bit_order  bo_out=bit_iterator_traits<IterOut>::bit_order;
-    static constexpr byte_order yo_in =bit_iterator_traits<IterIn>::byte_order;
-    static constexpr byte_order yo_out=bit_iterator_traits<IterOut>::byte_order;
-    static constexpr uint8_t eb_in = 8 * sizeof(ul_in); // element bits
-    static constexpr uint8_t eb_out = 8 * sizeof(ul_out); // element bits
-    static constexpr std::size_t elements_in = testvec_bits/(8*sizeof(ul_in));
-    static constexpr std::size_t elements_out = testvec_bits/(8*sizeof(ul_out));
+    using traits_in = bit_iterator_traits<IterIn>;
+    using traits_out= bit_iterator_traits<IterOut>;
+    using ul_in = typename traits_in::underlying_type;
+    using ul_out= typename traits_out::underlying_type;
+    static constexpr bit_order  bo_in =traits_in::bit_order;
+    static constexpr bit_order  bo_out=traits_out::bit_order;
+    static constexpr byte_order yo_in =traits_in::byte_order;
+    static constexpr byte_order yo_out=traits_out::byte_order;
+    static constexpr bool rev_in = traits_in::is_reverse;
+    static constexpr bool rev_out = traits_out::is_reverse;
+    static constexpr bool net_rev = rev_in != rev_out;
 
-    std::array<ul_in,elements_in> data_in = testvec<bo_in,ul_in,yo_in>();
-    DataIn* data_in_base = begin(data_in);
-    for_each_range_copy([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3){
-//        std::cout << "(" << (int)b1 << ", " << (int)b2 << ", " << (int)b3 << ")";
-        std::array<ul_out,elements_out> output{};
-        std::array<ul_out, elements_out> expected =
-            testvec_partial_shifted<false, bo_out, ul_out, yo_out, false>(
-                b1, b2, b3);
-        IterIn it(data_in_base+(b1/eb_in), b1%eb_in);
-        IterIn end(data_in_base+(b2/eb_in), b2%eb_in);
-        IterOut out(begin(output)+(b3/eb_out), b3%eb_out);
+    testvec_t<ul_in> data_in = testvec<bo_in, ul_in, yo_in>();
+    for_each_range_copy([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3) {
+        testvec_t<ul_out> output{};
+        testvec_t<ul_out> expected =
+            testvec_partial_shifted<net_rev, bo_out, ul_out, yo_out, false>(
+                rev_in ? testvec_bits - b2 : b1,
+                rev_in ? testvec_bits - b1 : b2,
+                rev_in ? testvec_bits - (b3 + (b2 - b1)) : b3);
+
+        IterIn it   = make_bit_iterator<IterIn>(data_in, bitter::offset(b1));
+        IterIn end  = make_bit_iterator<IterIn>(data_in, bitter::offset(b2));
+        IterOut out = make_bit_iterator<IterOut>(output, bitter::offset(b3));
         copy(it, end, out);
         if (output == expected) {
 //            std::cout << " OK\n"  << expected << "\n";
         } else {
-            std::cout << "\n" << output << "\n" << expected << "\n";
+            std::cout << "\n(" << (int)b1 << ", " << (int)b2 << ", " << (int)b3
+                      << ")\n" << output << "\n" << expected << "\n";
         }
         AssertThat(output, Equals(expected));
     });

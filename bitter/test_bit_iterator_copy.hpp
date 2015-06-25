@@ -16,42 +16,54 @@ using std::ptrdiff_t;
 using bit_order = bitter::bit_order;
 using byte_order = bitter::byte_order;
 
-template <bit_order BO, typename UL, byte_order YO = byte_order::none>
-struct testvec_shifted_ {
-    using testvec_t = std::array<UL,testvec_bits/(8*sizeof(UL))>;
-    static constexpr std::size_t shifts = testvec_bits;
-    using shifted_testvecs = std::array<testvec_t,shifts>;
-    static const shifted_testvecs data;
-    static constexpr uint8_t element_bits = 8*sizeof(UL);
-};
 
-template <bit_order BO, typename UL, byte_order YO>
-const typename testvec_shifted_<BO,UL,YO>::shifted_testvecs
-testvec_shifted_<BO,UL,YO>::data = []{
+template <typename UL>
+using testvec_t = std::array<UL,testvec_bits/(8*sizeof(UL))>;
+
+template <bit_order BO, typename UL, byte_order YO = byte_order::none>
+const testvec_t<UL> &testvec_rev()
+{
+    using namespace bitter;
+    static const testvec_t<UL> reversed = [] {
+        const auto &fwd = testvec<BO, UL, YO>();
+        testvec_t<UL> ret;
+        std::array<bit, testvec_bits> as_bits;
+        std::copy(const_bit_iterator<BO, UL, YO>(begin(fwd), 0),
+                  const_bit_iterator<BO, UL, YO>(end(fwd), 0), begin(as_bits));
+        std::copy(as_bits.rbegin(), as_bits.rend(),
+                  bit_iterator<BO, UL, YO>(begin(ret), 0));
+        return ret;
+    }();
+    return reversed;
+}
+
+/* testvec_shifted
+ * testvec_shifted(i) is testvec rotated left by i bits, then maybe reversed
+ */
+template <bool R, bit_order BO, typename UL, byte_order YO = byte_order::none>
+const testvec_t<UL> &testvec_shifted(std::ptrdiff_t shift)
+{
+    static constexpr std::size_t shifts = testvec_bits;
+    using shifted_testvecs = std::array<testvec_t<UL>,shifts>;
+    static const shifted_testvecs data = []{
         using namespace bitter;
-        const auto& unshifted = testvec<BO,UL,YO>();
+        const auto &unshifted =
+            R ? testvec_rev<BO, UL, YO>() : testvec<BO, UL, YO>();
         std::array<bit,testvec_bits> as_bits;
         std::copy(const_bit_iterator<BO, UL, YO>(begin(unshifted), 0),
                   const_bit_iterator<BO, UL, YO>(end(unshifted), 0),
                   begin(as_bits));
         shifted_testvecs ret;
         for (std::size_t i = 0; i < testvec_bits; ++i) {
-            testvec_t& tv = ret[i];
-            auto it = std::copy(std::next(begin(as_bits), i), end(as_bits),
+            testvec_t<UL>& tv = ret[i];
+            auto j = R ? (testvec_bits-i) : i;
+            auto it = std::copy(std::next(begin(as_bits), j), end(as_bits),
                                 bit_iterator<BO, UL, YO>(tv.data(), 0));
-            std::copy(begin(as_bits), std::next(begin(as_bits),i), it);
+            std::copy(begin(as_bits), std::next(begin(as_bits),j), it);
         }
         return ret;
     }();
-
-/* testvec_shifted
- * testvec_shifted(i) is rotated left by i bits
- */
-template <bit_order BO, typename UL, byte_order YO = byte_order::none>
-constexpr const std::array<UL,testvec_bits/8/sizeof(UL)>&
-testvec_shifted(std::ptrdiff_t shift)
-{
-    return testvec_shifted_<BO,UL,YO>::data[shift];
+    return data[shift];
 }
 
 template <typename F>
@@ -71,53 +83,23 @@ void for_each_range_copy(F&& f)
     });
 }
 
-constexpr static ptrdiff_t range_index(ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3)
-{
-    return b1*(3*testvec_bits*testvec_bits+9*testvec_bits+7-b1*b1)/6
-        +((b2-b1)*(2*testvec_bits-b2+b1+3))/2
-        +b3;
-}
-
-static constexpr std::size_t total_shifted_ranges =
-    range_index(testvec_bits + 1, testvec_bits + 1, 0);
-
-template <bit_order BO, typename UL, byte_order YO, bool Fill>
-struct testvec_partial_shifted_
-{
-    using testvec_t = std::array<UL,testvec_bits/(8*sizeof(UL))>;
-    using shifted_partial_testvecs = std::array<testvec_t,total_shifted_ranges>;
-    static constexpr uint8_t element_bits = 8*sizeof(UL);
-    static shifted_partial_testvecs data;
-    static std::array<bool,total_shifted_ranges> data_set;
-};
-
-template <bit_order BO, typename UL, byte_order YO, bool Fill>
-typename testvec_partial_shifted_<BO,UL,YO,Fill>::shifted_partial_testvecs
-testvec_partial_shifted_<BO,UL,YO,Fill>::data{};
-
-template <bit_order BO, typename UL, byte_order YO, bool Fill>
-std::array<bool, total_shifted_ranges>
-testvec_partial_shifted_<BO, UL, YO, Fill>::data_set{};
-
-template <bit_order BO, typename UL, byte_order YO, bool Fill>
-const std::array<UL,testvec_bits/8/sizeof(UL)>&
-testvec_partial_shifted(ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3)
+template <bool R, bit_order BO, typename UL, byte_order YO, bool Fill>
+testvec_t<UL> testvec_partial_shifted(ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3)
 {
     using namespace bitter;
-    using storage = testvec_partial_shifted_<BO, UL, YO, Fill>;
-    auto idx      = range_index(b1, b2, b3);
-    auto &ret = storage::data[idx];
-    if (storage::data_set[idx])
-        return ret;
+    testvec_t<UL> ret;
 
-    ret = testvec_shifted<BO, UL, YO>((b1 - b3 + testvec_bits) % testvec_bits);
+    ret =
+        testvec_shifted<R, BO, UL, YO>((b1 - b3 + testvec_bits) % testvec_bits);
+    auto b4 = b3 + (b2 - b1);
     std::fill(bit_iterator<BO, UL, YO>(ret.data(), 0),
-              bit_iterator<BO, UL, YO>(ret.data(), offset(b3)),
+              bit_iterator<BO, UL, YO>(ret.data(),
+                                       offset(R ? testvec_bits - b4 : b3)),
               bit(Fill));
-    std::fill(bit_iterator<BO, UL, YO>(ret.data(), offset(b3 + (b2-b1))),
+    std::fill(bit_iterator<BO, UL, YO>(ret.data(),
+                                       offset(R ? testvec_bits - b3 : b4)),
               bit_iterator<BO, UL, YO>(ret.data(), offset(testvec_bits)),
               bit(Fill));
-    storage::data_set[idx] = true;
     return ret;
 }
 
@@ -143,8 +125,9 @@ void copy_fwd_fwd()
     for_each_range_copy([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3){
 //        std::cout << "(" << (int)b1 << ", " << (int)b2 << ", " << (int)b3 << ")";
         std::array<ul_out,elements_out> output{};
-        std::array<ul_out,elements_out> expected =
-            testvec_partial_shifted<bo_out, ul_out, yo_out, false>(b1, b2, b3);
+        std::array<ul_out, elements_out> expected =
+            testvec_partial_shifted<false, bo_out, ul_out, yo_out, false>(
+                b1, b2, b3);
         IterIn it(data_in_base+(b1/eb_in), b1%eb_in);
         IterIn end(data_in_base+(b2/eb_in), b2%eb_in);
         IterOut out(begin(output)+(b3/eb_out), b3%eb_out);

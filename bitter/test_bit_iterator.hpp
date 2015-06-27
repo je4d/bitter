@@ -147,43 +147,46 @@ struct bit_iterator_traits<
     using forward_iterator = bitter::const_bit_iterator<BO,UL,YO>;
 };
 
-std::ostream &operator<<(std::ostream &o, const bitter::bit &b)
-{
-    return o << (b ? "1_b" : "0_b");
-}
-
-template <typename UL>
-std::ostream &operator<<(std::ostream &o, const bitter::bitref<UL> &b)
-{
-    return o << (bit(b) ? "1_b" : "0_b");
-}
-
-template <bit_order BO, typename UL, byte_order YO>
-std::ostream &operator<<(std::ostream &o,
-                         const bitter::bit_iterator<BO, UL, YO> &it)
-{
-    void *addr = it.data;
-    return o << "[" << addr << ", " << static_cast<int>(it.bitno) << "]";
-}
-
-template <bit_order BO, typename UL, byte_order YO>
-std::ostream &operator<<(std::ostream &o,
-                         const bitter::const_bit_iterator<BO, UL, YO> &it)
-{
-    void *addr = it.data;
-    return o << "[" << addr << ", " << static_cast<int>(it.bitno) << "]";
-}
-
-template <typename T>
-typename std::enable_if<std::is_integral<T>::value, std::ostream &>::type
-operator<<(std::ostream &o, const testvec_t<T> &a)
-{
-    o << "[";
-    bool first = true;
-    for (auto &x : a) {
-        o << (first ? "" : ", ") << std::bitset<sizeof(T) * 8>(x);
-        first = false;
+namespace bitter {
+    std::ostream &operator<<(std::ostream &o, const bitter::bit &b)
+    {
+        return o << (b ? "1_b" : "0_b");
     }
-    return o << "]";
+
+    template <typename UL>
+    std::ostream &operator<<(std::ostream &o, const bitter::bitref<UL> &b)
+    {
+        return o << (bit(b) ? "1_b" : "0_b");
+    }
+
+    template <bit_order BO, typename UL, byte_order YO>
+    std::ostream &operator<<(std::ostream &o,
+                             const bitter::bit_iterator<BO, UL, YO> &it)
+    {
+        void *addr = it.data;
+        return o << "[" << addr << ", " << static_cast<int>(it.bitno) << "]";
+    }
+
+    template <bit_order BO, typename UL, byte_order YO>
+    std::ostream &operator<<(std::ostream &o,
+                             const bitter::const_bit_iterator<BO, UL, YO> &it)
+    {
+        void *addr = it.data;
+        return o << "[" << addr << ", " << static_cast<int>(it.bitno) << "]";
+    }
 }
 
+namespace std {
+    template <typename T>
+    typename std::enable_if<std::is_integral<T>::value, std::ostream &>::type
+    operator<<(std::ostream &o, const testvec_t<T> &a)
+    {
+        o << "[";
+        bool first = true;
+        for (auto &x : a) {
+            o << (first ? "" : ", ") << std::bitset<sizeof(T) * 8>(x);
+            first = false;
+        }
+        return o << "]";
+    }
+}

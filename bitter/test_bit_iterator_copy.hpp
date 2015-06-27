@@ -156,6 +156,18 @@ struct test_copy_iterator_types_fixed_itt
     using lsb0_iterator = InIter<bit_order::lsb0, UL, YO>;
 };
 
+template <template <typename, byte_order> class Iter>
+struct test_copy_iterator_types_fixed_itt_bo
+{
+    using uint8_iterator = Iter<uint8_t, byte_order::none>;
+    template <byte_order YO>
+    using uint16_iterator = Iter<uint16_t, YO>;
+    template <byte_order YO>
+    using uint32_iterator = Iter<uint32_t, YO>;
+    template <byte_order YO>
+    using uint64_iterator = Iter<uint64_t, YO>;
+};
+
 ////////////////////////////////////////////////////////////////////////////////
 // Non-aliasing-specific fan-out
 
@@ -260,6 +272,109 @@ void test_non_aliasing_copy_fixed_itt_bo()
                  InIter<uint64_t, byte_order::lsb0>, OutIter>);
 }
 
+////////////////////////////////////////////////////////////////////////////////
+// Aliasing-specific fan-out
+
+template <class IterIn, class IterOut>
+void test_aliasing_copy()
+{
+    using traits_in  = bit_iterator_traits<IterIn>;
+    using traits_out = bit_iterator_traits<IterOut>;
+    static_assert(std::is_same<typename traits_in::underlying_type,
+                               typename traits_out::underlying_type>::value,
+                  "test_aliasing_copy cannot be used with iterators that have "
+                  "mismatching underlying types");
+    static constexpr bit_order bo_in   = traits_in::bit_order;
+    static constexpr bit_order bo_out  = traits_out::bit_order;
+    using ul_in                        = typename traits_in::underlying_type;
+    using ul_out                       = typename traits_out::underlying_type;
+    static constexpr byte_order yo_in  = traits_in::byte_order;
+    static constexpr byte_order yo_out = traits_out::byte_order;
+    static constexpr bool rev_in = traits_in::is_reverse;
+    static constexpr bool rev_out = traits_out::is_reverse;
+    testvec_t<ul_out> exp_base = testvec<bo_in, ul_in, yo_in>();
+    for_each_range_copy([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3) {
+        std::array<bool, testvec_bits> validate_copy{{}};
+        for (auto br = b1, bw = b3; br < b2; ++br,++bw)
+        {
+            validate_copy[bitter::detail::bitidx<bo_out, ul_out, yo_out>(
+                bitter::offset(rev_out ? testvec_bits - bw - 1 : bw))] = true;
+            if (validate_copy[bitter::detail::bitidx<bo_in, ul_in, yo_in>(
+                    bitter::offset(rev_in ? testvec_bits - br - 1 : br))])
+                return;
+        }
+
+        testvec_t<ul_out> expected = testvec<bo_in, ul_in, yo_in>();
+
+        IterIn it_x  = make_bit_iterator<IterIn>(exp_base, bitter::offset(b1));
+        IterIn end_x = make_bit_iterator<IterIn>(exp_base, bitter::offset(b2));
+        IterOut exp  = make_bit_iterator<IterOut>(expected, bitter::offset(b3));
+        std::copy(it_x, end_x, exp);
+
+        testvec_t<ul_out> data_io = testvec<bo_in, ul_in, yo_in>();
+
+        IterIn it   = make_bit_iterator<IterIn>(data_io, bitter::offset(b1));
+        IterIn end  = make_bit_iterator<IterIn>(data_io, bitter::offset(b2));
+        IterOut out = make_bit_iterator<IterOut>(data_io, bitter::offset(b3));
+        copy(it, end, out);
+        if (data_io != expected)
+            std::cout << "\n(" << (int)b1 << ", " << (int)b2 << ", " << (int)b3
+                      << ")\n" << data_io << "\n" << expected << "\n";
+        AssertThat(data_io, Equals(expected));
+    });
+}
+
+template <typename InIter, typename OutIter>
+void test_aliasing_copy_fixed_it()
+{
+    it("correctly performs aliasing copies",
+       &test_aliasing_copy<InIter, OutIter>);
+}
+
+template <template <byte_order YO> class InIter,
+          template <byte_order YO> class OutIter>
+void test_aliasing_copy_fixed_itt_bo_ul()
+{
+    describe("from byte_order=msb0 to byte_order=msb0",
+             &test_aliasing_copy_fixed_it<InIter<byte_order::msb0>,
+                                          OutIter<byte_order::msb0>>);
+    describe("from byte_order=msb0 to byte_order=lsb0",
+             &test_aliasing_copy_fixed_it<InIter<byte_order::msb0>,
+                                          OutIter<byte_order::lsb0>>);
+    describe("from byte_order=lsb0 to byte_order=msb0",
+             &test_aliasing_copy_fixed_it<InIter<byte_order::lsb0>,
+                                          OutIter<byte_order::msb0>>);
+    describe("from byte_order=lsb0 to byte_order=lsb0",
+             &test_aliasing_copy_fixed_it<InIter<byte_order::lsb0>,
+                                          OutIter<byte_order::lsb0>>);
+}
+
+template <template <typename UL, byte_order YO> class InIter,
+          template <typename UL, byte_order YO> class OutIter>
+void test_aliasing_copy_fixed_itt_bo()
+{
+    using in_types  = test_copy_iterator_types_fixed_itt_bo<InIter>;
+    using out_types = test_copy_iterator_types_fixed_itt_bo<OutIter>;
+    describe("to/from a uint8_t buffer",
+             &test_aliasing_copy_fixed_it<typename in_types::uint8_iterator,
+                                          typename out_types::uint8_iterator>);
+    describe("to/from a uint16_t buffer",
+             &test_aliasing_copy_fixed_itt_bo_ul<
+                 in_types::template uint16_iterator,
+                 out_types::template uint16_iterator>);
+    describe("to/from a uint32_t buffer",
+             &test_aliasing_copy_fixed_itt_bo_ul<
+                 in_types::template uint32_iterator,
+                 out_types::template uint32_iterator>);
+    describe("to/from a uint64_t buffer",
+             &test_aliasing_copy_fixed_itt_bo_ul<
+                 in_types::template uint64_iterator,
+                 out_types::template uint64_iterator>);
+}
+
+////////////////////////////////////////////////////////////////////////////////
+// Shared fan-out
+
 template <template <typename UL, byte_order YO> class InIter,
           template <bit_order BO, typename UL, byte_order YO> class OutIter>
 void test_copy_fixed_itt_boi()
@@ -268,10 +383,14 @@ void test_copy_fixed_itt_boi()
     describe("bit_order=msb0", [] {
         test_non_aliasing_copy_fixed_itt_bo<InIter,
                                             types::template msb0_iterator>();
+        test_aliasing_copy_fixed_itt_bo<InIter,
+                                        types::template msb0_iterator>();
     });
     describe("bit_order=lsb0", [] {
         test_non_aliasing_copy_fixed_itt_bo<InIter,
                                             types::template lsb0_iterator>();
+        test_aliasing_copy_fixed_itt_bo<InIter,
+                                        types::template lsb0_iterator>();
     });
 }
 

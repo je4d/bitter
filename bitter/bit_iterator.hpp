@@ -7,6 +7,7 @@
 #include "offset.hpp"
 
 #include <cstddef>
+#include <cstdint>
 #include <utility>
 
 namespace bitter {
@@ -51,6 +52,12 @@ constexpr uint8_t bitidx(uint8_t bitno)
 {
     return 8*byteidx<UL,YO>(bitno/8)
         + ((BO == bit_order::lsb0) ? (bitno%8) : (7-(bitno%8)));
+}
+
+template <bit_order BO, typename UL, byte_order YO>
+constexpr std::ptrdiff_t bitidx(offset bitno)
+{
+    return bitno - bitno.bit<UL>() + bitidx<BO, UL, YO>(bitno.bit<UL>());
 }
 
 struct const_bitptr

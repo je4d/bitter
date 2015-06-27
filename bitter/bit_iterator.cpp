@@ -722,6 +722,12 @@ go_bandit([]{
             AssertThat((bitidx<lsb0,uint64_t,byte_order::msb0>(46)),Equals(22));
             AssertThat((bitidx<lsb0,uint64_t,byte_order::msb0>(47)),Equals(23));
         });
+
+        it("supports offset arguments", [&] {
+            AssertThat(
+                (bitidx<msb0, uint16_t, byte_order::msb0>(bitter::offset(16))),
+                Equals(31));
+        });
     });
 });
 

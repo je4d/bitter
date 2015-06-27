@@ -171,7 +171,7 @@ struct test_copy_iterator_types_fixed_itt_bo
 ////////////////////////////////////////////////////////////////////////////////
 // Non-aliasing-specific fan-out
 
-template <class IterIn, class IterOut>
+template <class IterIn, class IterOut, bool Fill>
 void test_non_aliasing_copy()
 {
     using traits_in = bit_iterator_traits<IterIn>;
@@ -185,12 +185,18 @@ void test_non_aliasing_copy()
     static constexpr bool rev_in = traits_in::is_reverse;
     static constexpr bool rev_out = traits_out::is_reverse;
     static constexpr bool net_rev = rev_in != rev_out;
+    static const testvec_t<ul_out> Zeros{};
+    static const testvec_t<ul_out> Ones = [] {
+        testvec_t<ul_out> ret;
+        std::fill(begin(ret), end(ret), -1);
+        return ret;
+    }();
 
     testvec_t<ul_in> data_in = testvec<bo_in, ul_in, yo_in>();
     for_each_range_copy([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3) {
-        testvec_t<ul_out> output{};
+        testvec_t<ul_out> output = Fill ? Ones : Zeros;
         testvec_t<ul_out> expected =
-            testvec_partial_shifted<net_rev, bo_out, ul_out, yo_out, false>(
+            testvec_partial_shifted<net_rev, bo_out, ul_out, yo_out, Fill>(
                 rev_in ? testvec_bits - b2 : b1,
                 rev_in ? testvec_bits - b1 : b2,
                 rev_in ? testvec_bits - (b3 + (b2 - b1)) : b3);
@@ -208,8 +214,10 @@ void test_non_aliasing_copy()
 template <typename InIter, typename OutIter>
 void test_non_aliasing_copy_fixed_it()
 {
-    it("correctly performs non-aliasing copies",
-       &test_non_aliasing_copy<InIter, OutIter>);
+    it("correctly performs non-aliasing copies (fill=0)",
+       &test_non_aliasing_copy<InIter, OutIter, false>);
+    it("correctly performs non-aliasing copies (fill=1)",
+       &test_non_aliasing_copy<InIter, OutIter, true>);
 }
 
 template <typename InIter, template <typename UL, byte_order YO> class OutIter>

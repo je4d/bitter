@@ -69,17 +69,20 @@ void for_each_bit_range(F&& f)
             std::forward<F>(f)(b1, b2);
 }
 
-template <typename F>
-void for_each_range_copy(F&& f)
-{
-    for_each_bit_range([&](std::ptrdiff_t b1, std::ptrdiff_t b2){
-        for (std::ptrdiff_t b3 = 0; b3 < testvec_bits-(b2-b1)+1; ++b3)
-            std::forward<F>(f)(b1, b2, b3);
-    });
-}
+struct for_each_range_copy {
+    template <typename F>
+    void operator()(F &&f) const
+    {
+        for_each_bit_range([&](std::ptrdiff_t b1, std::ptrdiff_t b2) {
+            for (std::ptrdiff_t b3 = 0; b3 < testvec_bits - (b2 - b1) + 1; ++b3)
+                std::forward<F>(f)(b1, b2, b3);
+        });
+    }
+};
 
-template <bool R, bit_order BO, typename UL, byte_order YO, bool Fill>
-testvec_t<UL> testvec_partial_shifted(ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3)
+template <bool R, bit_order BO, typename UL, byte_order YO>
+testvec_t<UL> testvec_partial_shifted(ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3,
+                                      bitter::bit fill)
 {
     using namespace bitter;
     testvec_t<UL> ret;
@@ -90,11 +93,11 @@ testvec_t<UL> testvec_partial_shifted(ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3)
     std::fill(bit_iterator<BO, UL, YO>(ret.data(), 0),
               bit_iterator<BO, UL, YO>(ret.data(),
                                        offset(R ? testvec_bits - b4 : b3)),
-              bit(Fill));
+              bit(fill));
     std::fill(bit_iterator<BO, UL, YO>(ret.data(),
                                        offset(R ? testvec_bits - b3 : b4)),
               bit_iterator<BO, UL, YO>(ret.data(), offset(testvec_bits)),
-              bit(Fill));
+              bit(fill));
     return ret;
 }
 
@@ -171,8 +174,8 @@ struct test_copy_iterator_types_fixed_itt_bo
 ////////////////////////////////////////////////////////////////////////////////
 // Non-aliasing-specific fan-out
 
-template <class IterIn, class IterOut, bool Fill>
-void test_non_aliasing_copy()
+template <class IterIn, class IterOut, class Loop>
+void test_non_aliasing_copy(Loop&& loop, bitter::bit fill)
 {
     using traits_in = bit_iterator_traits<IterIn>;
     using traits_out= bit_iterator_traits<IterOut>;
@@ -193,13 +196,13 @@ void test_non_aliasing_copy()
     }();
 
     testvec_t<ul_in> data_in = testvec<bo_in, ul_in, yo_in>();
-    for_each_range_copy([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3) {
-        testvec_t<ul_out> output = Fill ? Ones : Zeros;
+    std::forward<Loop>(loop)([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3) {
+        testvec_t<ul_out> output = fill ? Ones : Zeros;
         testvec_t<ul_out> expected =
-            testvec_partial_shifted<net_rev, bo_out, ul_out, yo_out, Fill>(
+            testvec_partial_shifted<net_rev, bo_out, ul_out, yo_out>(
                 rev_in ? testvec_bits - b2 : b1,
                 rev_in ? testvec_bits - b1 : b2,
-                rev_in ? testvec_bits - (b3 + (b2 - b1)) : b3);
+                rev_in ? testvec_bits - (b3 + (b2 - b1)) : b3, fill);
         IterIn it   = make_bit_iterator<IterIn>(data_in, bitter::offset(b1));
         IterIn end  = make_bit_iterator<IterIn>(data_in, bitter::offset(b2));
         IterOut out = make_bit_iterator<IterOut>(output, bitter::offset(b3));
@@ -214,10 +217,14 @@ void test_non_aliasing_copy()
 template <typename InIter, typename OutIter>
 void test_non_aliasing_copy_fixed_it()
 {
-    it("correctly performs non-aliasing copies (fill=0)",
-       &test_non_aliasing_copy<InIter, OutIter, false>);
-    it("correctly performs non-aliasing copies (fill=1)",
-       &test_non_aliasing_copy<InIter, OutIter, true>);
+    it("correctly performs non-aliasing copies (fill=0)", [] {
+        test_non_aliasing_copy<InIter, OutIter>(for_each_range_copy{},
+                                                bitter::bit(false));
+    });
+    it("correctly performs non-aliasing copies (fill=1)", [] {
+        test_non_aliasing_copy<InIter, OutIter>(for_each_range_copy{},
+                                                bitter::bit(true));
+    });
 }
 
 template <typename InIter, template <typename UL, byte_order YO> class OutIter>
@@ -283,8 +290,8 @@ void test_non_aliasing_copy_fixed_itt_bo()
 ////////////////////////////////////////////////////////////////////////////////
 // Aliasing-specific fan-out
 
-template <class IterIn, class IterOut>
-void test_aliasing_copy()
+template <class IterIn, class IterOut, class Loop>
+void test_aliasing_copy(Loop&& loop)
 {
     using traits_in  = bit_iterator_traits<IterIn>;
     using traits_out = bit_iterator_traits<IterOut>;
@@ -301,7 +308,7 @@ void test_aliasing_copy()
     static constexpr bool rev_in = traits_in::is_reverse;
     static constexpr bool rev_out = traits_out::is_reverse;
     testvec_t<ul_out> exp_base = testvec<bo_in, ul_in, yo_in>();
-    for_each_range_copy([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3) {
+    std::forward<Loop>(loop)([&](ptrdiff_t b1, ptrdiff_t b2, ptrdiff_t b3) {
         std::array<bool, testvec_bits> validate_copy{{}};
         for (auto br = b1, bw = b3; br < b2; ++br,++bw)
         {
@@ -336,7 +343,7 @@ template <typename InIter, typename OutIter>
 void test_aliasing_copy_fixed_it()
 {
     it("correctly performs aliasing copies",
-       &test_aliasing_copy<InIter, OutIter>);
+       [] { test_aliasing_copy<InIter, OutIter>(for_each_range_copy{}); });
 }
 
 template <template <byte_order YO> class InIter,

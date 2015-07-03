@@ -27,17 +27,21 @@ custom_generated_units :=                                                      \
         bit_iterator_copy_quick_const_dests
 
 build/$(DIR)/bit_iterator_copy_quick_srcs.cpp: \
-        build/%/bit_iterator_copy_quick_srcs.cpp: %/quicktest.py
-	$*/quicktest.py srcs > "$@" || (rm -f "$@"; false)
+        build/%/bit_iterator_copy_quick_srcs.cpp: \
+            %/bit_iterator_copy_quick_gen.py
+	$*/bit_iterator_copy_quick_gen.py srcs > "$@" || (rm -f "$@"; false)
 build/$(DIR)/bit_iterator_copy_quick_const_srcs.cpp: \
-        build/%/bit_iterator_copy_quick_const_srcs.cpp: %/quicktest.py
-	$*/quicktest.py srcs const > "$@" || (rm -f "$@"; false)
+        build/%/bit_iterator_copy_quick_const_srcs.cpp: \
+            %/bit_iterator_copy_quick_gen.py
+	$*/bit_iterator_copy_quick_gen.py srcs const > "$@" || (rm -f "$@"; false)
 build/$(DIR)/bit_iterator_copy_quick_dests.cpp: \
-        build/%/bit_iterator_copy_quick_dests.cpp: %/quicktest.py
-	$*/quicktest.py dests > "$@" || (rm -f "$@"; false)
+        build/%/bit_iterator_copy_quick_dests.cpp: \
+            %/bit_iterator_copy_quick_gen.py
+	$*/bit_iterator_copy_quick_gen.py dests > "$@" || (rm -f "$@"; false)
 build/$(DIR)/bit_iterator_copy_quick_const_dests.cpp: \
-        build/%/bit_iterator_copy_quick_const_dests.cpp: %/quicktest.py
-	$*/quicktest.py dests const > "$@" || (rm -f "$@"; false)
+        build/%/bit_iterator_copy_quick_const_dests.cpp: \
+            %/bit_iterator_copy_quick_gen.py
+	$*/bit_iterator_copy_quick_gen.py dests const > "$@" || (rm -f "$@"; false)
 
 bit_iterator_copy_quick_objects := bit_iterator_copy_quick_srcs                \
                                    bit_iterator_copy_quick_const_srcs          \

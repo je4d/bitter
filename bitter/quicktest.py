@@ -95,42 +95,52 @@ for opts in itertools.product(*iter_options):
 
 const_pfx = "const_" if "const" in sys.argv[1:] else ""
 fn_name = "test_non_aliasing_copy_quick_%s%s" % (const_pfx, "srcs" if "srcs" in sys.argv[1:] else "dests")
+configs = sorted(configs)
+fn_num = 1
 
 print """\
-#include <test_bit_iterator_copy_quick.hpp>
+#include <test_bit_iterator_copy_quick.hpp>"""
 
+while configs:
+
+    print """\
 template <template <bit_order, typename, byte_order> class InIter>
-void %s_impl()
+void %s_impl_%d()
 {
     using namespace bitter;
-""" % fn_name
+""" % (fn_name, fn_num)
+    fn_num += 1
 
-prev = None
-for in_opts, out_opts in sorted(configs):
-    if (in_opts, out_opts) == prev:
-        continue
-    prev = copy.deepcopy((in_opts, out_opts))
-    in_iter = in_opts[0] % tuple(["bit_iterator"]+list(in_opts[1:]))
-    out_iter = out_opts[0] % tuple(["bit_iterator"]+list(out_opts[1:]))
-    fill = random.sample(xrange(2),1)[0]
+    prev = None
+    for in_opts, out_opts in configs[:10]:
+        if (in_opts, out_opts) == prev:
+            continue
+        prev = copy.deepcopy((in_opts, out_opts))
+        in_iter = in_opts[0] % tuple(["bit_iterator"]+list(in_opts[1:]))
+        out_iter = out_opts[0] % tuple(["bit_iterator"]+list(out_opts[1:]))
+        fill = random.sample(xrange(2),1)[0]
+        print """\
+        it(\"correctly performs non-aliasing copies from %s<%s,%s,%s> \"
+           \"to %s<%s,%s,%s> (fill=%s)\",
+           [] {
+               test_non_aliasing_copy<
+                   %s,
+                   %s>(
+                   for_each_quicktest_range{}, bitter::bit(%s));
+           });""" % (
+                ("reverse" if "reverse" in in_opts[0] else ""), trim(in_opts[1]), in_opts[2], trim(in_opts[3]),
+                ("reverse" if "reverse" in out_opts[0] else ""), trim(out_opts[1]), out_opts[2], trim(out_opts[3]),
+                fill, in_iter, out_iter, "true" if fill else "false")
+    configs = configs[10:]
+
     print """\
-    it(\"correctly performs non-aliasing copies from %s<%s,%s,%s> to \"
-       \"%s<%s,%s,%s> (fill=%s)\",
-       [] {
-           test_non_aliasing_copy<
-               %s,
-               %s>(
-               for_each_quicktest_range{}, bitter::bit(%s));
-       });""" % (
-            ("reverse" if "reverse" in in_opts[0] else ""), trim(in_opts[1]), in_opts[2], trim(in_opts[3]),
-            ("reverse" if "reverse" in out_opts[0] else ""), trim(out_opts[1]), out_opts[2], trim(out_opts[3]),
-            fill, in_iter, out_iter, "true" if fill else "false")
+}"""
 
-print """\
-}
 
+print """
 void %s()
-{
-    %s_impl<bitter::%sbit_iterator>();
-}""" % (fn_name, fn_name, const_pfx)
+{""" % fn_name
+for n in xrange(1,fn_num):
+    print "    %s_impl_%d<bitter::%sbit_iterator>();" % (fn_name, n, const_pfx)
+print "}"
 

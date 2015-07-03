@@ -57,10 +57,10 @@ $(DIR)/test: %/test: build/%/bit                                               \
                      build/%/bit_iterator                                      \
                      build/%/bit_iterator_copy_quick                           \
                      build/%/offset
-	stdbuf -o0 build/$*/bit
-	stdbuf -o0 build/$*/bit_iterator
-	stdbuf -o0 build/$*/bit_iterator_copy_quick
-	stdbuf -o0 build/$*/offset
+	build/$*/bit
+	build/$*/bit_iterator
+	build/$*/bit_iterator_copy_quick
+	build/$*/offset
 
 $(DIR)/full_test: %/full_test: build/%/bit                                     \
                                build/%/bit_iterator                            \

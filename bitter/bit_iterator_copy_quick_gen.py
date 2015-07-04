@@ -49,8 +49,6 @@ def trim(s):
             "byte_order::lsb0": "lsb0",
     }[s]
 
-configs = []
-
 def matchopt(n, opt):
     return n & 1<<(3-opt)
 
@@ -81,6 +79,22 @@ def randopts(opts, matchbits):
     ret[YO] = random.sample(possible_yos, 1)[0]
     return ret
 
+def indentwrap(string, indent, wrap):
+    ret = ""
+    maxlen = wrap - indent
+    while len(string) > maxlen:
+        spaceidx = string.rfind(" ", 0, maxlen-1)
+        if spaceidx == -1:
+            spaceidx = string.find(" ", maxlen-1)
+        if spaceidx == -1:
+            break
+        ret += string[:spaceidx+1] + '"\n' + ' '*indent
+        string = '"' + string[spaceidx+1:]
+    return ret + string
+
+noalias_configs = []
+alias_configs = []
+
 for opts in itertools.product(*iter_options):
     if (opts[2] == "uint8_t") != (opts[3] == "byte_order::none"):
         continue
@@ -88,59 +102,75 @@ for opts in itertools.product(*iter_options):
         ropts = randopts(opts, i)
         if ropts:
             if "srcs" in sys.argv[1:]:
-                configs.append(copy.deepcopy((opts, ropts)))
+                noalias_configs.append(copy.deepcopy((opts, ropts)))
             elif "dests" in sys.argv[1:]:
-                configs.append(copy.deepcopy((ropts, opts)))
+                noalias_configs.append(copy.deepcopy((ropts, opts)))
+            if matchopt(i, UL):
+                if "srcs" in sys.argv[1:]:
+                    alias_configs.append(copy.deepcopy((opts, ropts)))
+                elif "dests" in sys.argv[1:]:
+                    alias_configs.append(copy.deepcopy((ropts, opts)))
 
 
 const_pfx = "const_" if "const" in sys.argv[1:] else ""
-fn_name = "test_non_aliasing_copy_quick_%s%s" % (const_pfx, "srcs" if "srcs" in sys.argv[1:] else "dests")
-configs = sorted(configs)
-fn_num = 1
+fn_name = "test_copy_quick_%s%s" % (const_pfx, "srcs" if "srcs" in sys.argv[1:] else "dests")
+impl_fn_name_template = "test_%%saliasing_copy_quick_%s%s_impl_%%d" % (const_pfx, "srcs" if "srcs" in sys.argv[1:] else "dests")
+noalias_configs = sorted(noalias_configs)
+alias_configs = sorted(alias_configs)
+impl_fn_names=[]
 
 print """\
 #include <test_bit_iterator_copy_quick.hpp>"""
 
-while configs:
+for configs, opt_non_lowline, opt_non_dash, has_fill in ((noalias_configs, "non_", "non-", True),
+                                                         (alias_configs, "", "", False)):
+    fn_num = 1
+    while configs:
+        impl_fn_name = impl_fn_name_template % (opt_non_lowline, fn_num)
+        impl_fn_names += [impl_fn_name]
 
-    print """\
+        print """
 template <template <bit_order, typename, byte_order> class InIter>
-void %s_impl_%d()
+void %s()
 {
     using namespace bitter;
-""" % (fn_name, fn_num)
-    fn_num += 1
+""" % impl_fn_name
+        fn_num += 1
 
-    prev = None
-    for in_opts, out_opts in configs[:10]:
-        if (in_opts, out_opts) == prev:
-            continue
-        prev = copy.deepcopy((in_opts, out_opts))
-        in_iter = in_opts[0] % tuple(["bit_iterator"]+list(in_opts[1:]))
-        out_iter = out_opts[0] % tuple(["bit_iterator"]+list(out_opts[1:]))
-        fill = random.sample(xrange(2),1)[0]
-        print """\
-        it(\"correctly performs non-aliasing copies from %s<%s,%s,%s> \"
-           \"to %s<%s,%s,%s> (fill=%s)\",
-           [] {
-               test_non_aliasing_copy<
-                   %s,
-                   %s>(
-                   for_each_quicktest_range{}, bitter::bit(%s));
-           });""" % (
+        prev = None
+        for in_opts, out_opts in configs[:10]:
+            if (in_opts, out_opts) == prev:
+                continue
+            prev = copy.deepcopy((in_opts, out_opts))
+            in_iter = in_opts[0] % tuple(["bit_iterator"]+list(in_opts[1:]))
+            out_iter = out_opts[0] % tuple(["bit_iterator"]+list(out_opts[1:]))
+            fill = (random.sample(xrange(2),1)[0] if has_fill else None)
+            description = '"correctly performs %saliasing copies from %s<%s,%s,%s> to %s<%s,%s,%s>%s",' % (
+                opt_non_dash,
                 ("reverse" if "reverse" in in_opts[0] else ""), trim(in_opts[1]), in_opts[2], trim(in_opts[3]),
                 ("reverse" if "reverse" in out_opts[0] else ""), trim(out_opts[1]), out_opts[2], trim(out_opts[3]),
-                fill, in_iter, out_iter, "true" if fill else "false")
-    configs = configs[10:]
+                " (fill=%s)" % fill if fill != None else "")
+            print """\
+    it(%s
+       [] {
+           test_%saliasing_copy<
+               %s,
+               %s>(
+               for_each_quicktest_range{}%s);
+       });""" % (
+                indentwrap(description, len("    it("), 80),
+                opt_non_lowline, in_iter, out_iter,
+                ", bitter::bit(%s)" % ("true" if fill else "false") if fill != None else "")
+        configs = configs[10:]
 
-    print """\
+        print """\
 }"""
 
 
 print """
 void %s()
 {""" % fn_name
-for n in xrange(1,fn_num):
-    print "    %s_impl_%d<bitter::%sbit_iterator>();" % (fn_name, n, const_pfx)
+for impl_fn_name in impl_fn_names:
+    print "    %s<bitter::%sbit_iterator>();" % (impl_fn_name, const_pfx)
 print "}"
 

@@ -173,7 +173,7 @@ void %s()
             if (in_opts, out_opts) == prev:
                 continue
             prev = copy.deepcopy((in_opts, out_opts))
-            in_iter = in_opts[0] % tuple(["bit_iterator"]+list(in_opts[1:]))
+            in_iter = in_opts[0] % tuple(["InIter"]+list(in_opts[1:]))
             out_iter = out_opts[0] % tuple(["bit_iterator"]+list(out_opts[1:]))
             fill = (random.sample(xrange(2),1)[0] if has_fill else None)
             description = '"correctly performs %saliasing copies from %s<%s,%s,%s> to %s<%s,%s,%s>%s",' % (

@@ -152,7 +152,7 @@ void observing_tests()
             const Iter i1(&arr[b/eb], b%eb);
             Iter i2(i1);
             AssertThat(i1, Equals(i2));
-            AssertThat(*i2, Equals(*i2));
+            AssertThat(*i1, Equals(*i2));
         });
     });
 

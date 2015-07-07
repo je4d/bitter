@@ -49,27 +49,27 @@ def trim(s):
             "byte_order::lsb0": "lsb0",
     }[s]
 
-def matchopt(n, opt):
+def changeopt(n, opt):
     return n & 1<<(3-opt)
 
-def randopts(opts, matchbits):
+def randopts(opts, diffbits):
     ret = list(copy.deepcopy(opts))
-    if not matchopt(matchbits, ITER):
+    if changeopt(diffbits, ITER):
         ret[ITER] = random.sample(set(iter_options[ITER]) - set([opts[ITER]]),1)[0]
-    if not matchopt(matchbits, BO):
+    if changeopt(diffbits, BO):
         ret[BO] = random.sample(set(iter_options[BO]) - set([opts[BO]]),1)[0]
 
-    possible_uls = set([opts[UL]]) if matchopt(matchbits, UL) else (set(iter_options[UL]) - set([opts[UL]]))
+    possible_uls = set([opts[UL]]) if not changeopt(diffbits, UL) else (set(iter_options[UL]) - set([opts[UL]]))
     if opts[YO] == "byte_order::none":
-        if matchopt(matchbits, YO):
-            possible_uls &= set(["uint8_t"])
-        elif not matchopt(matchbits, YO):
+        if changeopt(diffbits, YO):
             possible_uls -= set(["uint8_t"])
+        else:
+            possible_uls &= set(["uint8_t"])
     if not len(possible_uls):
         return None
     ret[UL] = random.sample(possible_uls, 1)[0]
 
-    possible_yos = set([opts[YO]]) if matchopt(matchbits, YO) else (set(iter_options[YO]) - set([opts[YO]]))
+    possible_yos = set([opts[YO]]) if not changeopt(diffbits, YO) else (set(iter_options[YO]) - set([opts[YO]]))
     if ret[UL] == "uint8_t":
         possible_yos &= set(["byte_order::none"])
     else:
@@ -77,7 +77,7 @@ def randopts(opts, matchbits):
     if not len(possible_yos):
         return None
     ret[YO] = random.sample(possible_yos, 1)[0]
-    return ret
+    return tuple(ret)
 
 def indentwrap(string, indent, wrap):
     ret = ""
@@ -93,7 +93,11 @@ def indentwrap(string, indent, wrap):
     return ret + string
 
 noalias_configs = []
+noalias_configs_srcs = []
+noalias_configs_dests = []
 alias_configs = []
+alias_configs_srcs = []
+alias_configs_dests = []
 
 for opts in itertools.product(*iter_options):
     if (opts[2] == "uint8_t") != (opts[3] == "byte_order::none"):
@@ -101,22 +105,49 @@ for opts in itertools.product(*iter_options):
     for i in xrange(16):
         ropts = randopts(opts, i)
         if ropts:
-            if "srcs" in sys.argv[1:]:
-                noalias_configs.append(copy.deepcopy((opts, ropts)))
-            elif "dests" in sys.argv[1:]:
-                noalias_configs.append(copy.deepcopy((ropts, opts)))
-            if matchopt(i, UL):
-                if "srcs" in sys.argv[1:]:
-                    alias_configs.append(copy.deepcopy((opts, ropts)))
-                elif "dests" in sys.argv[1:]:
-                    alias_configs.append(copy.deepcopy((ropts, opts)))
+            cfg = (opts, ropts)
+            noalias_configs.append(cfg)
+            noalias_configs_srcs.append(cfg)
 
+        ropts = randopts(opts, i)
+        if ropts:
+            cfg = (ropts, opts)
+            noalias_configs.append(cfg)
+            noalias_configs_dests.append(cfg)
+
+        if not changeopt(i, UL):
+            ropts = randopts(opts, i)
+            if ropts:
+                cfg = (opts, ropts)
+                alias_configs.append(cfg)
+                alias_configs_srcs.append(cfg)
+
+            ropts = randopts(opts, i)
+            if ropts:
+                cfg = (ropts, opts)
+                alias_configs.append(cfg)
+                alias_configs_dests.append(cfg)
+
+for cfg in noalias_configs:
+    if cfg in noalias_configs_srcs and cfg in noalias_configs_dests:
+        (noalias_configs_srcs, noalias_configs_dests)[random.getrandbits(1)].remove(cfg)
+for cfg in alias_configs:
+    if cfg in alias_configs_srcs and cfg in alias_configs_dests:
+        (alias_configs_srcs, alias_configs_dests)[random.getrandbits(1)].remove(cfg)
+
+noalias_configs = []
+alias_configs = []
+
+if "srcs" in sys.argv[1:]:
+    noalias_configs += noalias_configs_srcs
+    alias_configs += alias_configs_srcs
+if "dests" in sys.argv[1:]:
+    noalias_configs += noalias_configs_dests
+    alias_configs += alias_configs_dests
 
 const_pfx = "const_" if "const" in sys.argv[1:] else ""
 fn_name = "test_copy_quick_%s%s" % (const_pfx, "srcs" if "srcs" in sys.argv[1:] else "dests")
 impl_fn_name_template = "test_%%saliasing_copy_quick_%s%s_impl_%%d" % (const_pfx, "srcs" if "srcs" in sys.argv[1:] else "dests")
-noalias_configs = sorted(noalias_configs)
-alias_configs = sorted(alias_configs)
 impl_fn_names=[]
 
 print """\

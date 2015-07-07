@@ -2,6 +2,7 @@
 using namespace bandit;
 
 #include "bit_iterator.hpp"
+#include "bit_iterator_copy.hpp"
 #include "test_bit_iterator.hpp"
 
 #include <bitset>
@@ -209,7 +210,8 @@ void test_non_aliasing_copy(Loop&& loop, bitter::bit fill)
         copy(it, end, out);
         if (output != expected)
             std::cout << "\n(" << (int)b1 << ", " << (int)b2 << ", " << (int)b3
-                      << ")\n" << output << "\n" << expected << "\n";
+                      << ")\n" << data_in << "\n" << output << "\n" << expected
+                      << "\n";
         AssertThat(output, Equals(expected));
     });
 }

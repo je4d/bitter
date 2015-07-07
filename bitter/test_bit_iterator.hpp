@@ -109,6 +109,7 @@ struct bit_iterator_traits<bitter::bit_iterator<BO,UL,YO>>
     using const_underlying_type = UL;
     static constexpr bitter::byte_order byte_order = YO;
     static constexpr bool is_reverse = false;
+    using nonconst_iterator = bitter::bit_iterator<BO,UL,YO>;
     using forward_iterator = bitter::bit_iterator<BO,UL,YO>;
 };
 
@@ -120,6 +121,7 @@ struct bit_iterator_traits<bitter::const_bit_iterator<BO,UL,YO>>
     using const_underlying_type = const UL;
     static constexpr bitter::byte_order byte_order = YO;
     static constexpr bool is_reverse = false;
+    using nonconst_iterator = bitter::bit_iterator<BO,UL,YO>;
     using forward_iterator = bitter::const_bit_iterator<BO,UL,YO>;
 };
 
@@ -132,6 +134,8 @@ struct bit_iterator_traits<
     using const_underlying_type = UL;
     static constexpr bitter::byte_order byte_order = YO;
     static constexpr bool is_reverse = true;
+    using nonconst_iterator =
+        std::reverse_iterator<bitter::bit_iterator<BO, UL, YO>>;
     using forward_iterator = bitter::bit_iterator<BO,UL,YO>;
 };
 
@@ -144,6 +148,8 @@ struct bit_iterator_traits<
     using const_underlying_type = const UL;
     static constexpr bitter::byte_order byte_order = YO;
     static constexpr bool is_reverse = true;
+    using nonconst_iterator =
+        std::reverse_iterator<bitter::bit_iterator<BO, UL, YO>>;
     using forward_iterator = bitter::const_bit_iterator<BO,UL,YO>;
 };
 

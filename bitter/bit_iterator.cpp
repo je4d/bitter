@@ -514,6 +514,26 @@ void const_tests()
                        sfinae::deref_assign(it, *it))>::type::value,
                    Equals(false));
     });
+    it("has a conversion from the corresponding bit_iterator", [] {
+        using traits                   = bit_iterator_traits<Iter>;
+        static constexpr bit_order bo  = traits::bit_order;
+        using ul                       = typename traits::underlying_type;
+        static constexpr byte_order yo = traits::byte_order;
+        for_each_bit<bo,ul,yo>([](ul* arr, std::size_t b){
+            const typename traits::nonconst_iterator i1(arr, bitter::offset(b));
+            Iter i2 = i1;
+            AssertThat(i2.data, Equals(i1.data));
+            AssertThat(i2.bitno, Equals(i1.bitno));
+            AssertThat(i1, Equals(i2));
+            AssertThat(*i1, Equals(*i2));
+            i2 = Iter{};
+            i2 = i1;
+            AssertThat(i2.data, Equals(i1.data));
+            AssertThat(i2.bitno, Equals(i1.bitno));
+            AssertThat(i1, Equals(i2));
+            AssertThat(*i1, Equals(*i2));
+        });
+    });
 }
 
 template <bit_order BO, typename UL, byte_order YO = byte_order::none>

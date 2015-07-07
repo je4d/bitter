@@ -253,6 +253,9 @@ struct const_bit_iterator : detail::bit_iterator_impl<
     using const_iterator  = const_bit_iterator;
 
     constexpr const_bit_iterator() noexcept = default;
+    constexpr const_bit_iterator(bit_iterator<BO, UL, YO> o) noexcept
+        : const_bit_iterator(o.data, o.bitno)
+    {}
 
     const_bit_iterator(const UL* data, std::uint8_t bitno) noexcept :
         base{const_cast<UL*>(data), bitno}

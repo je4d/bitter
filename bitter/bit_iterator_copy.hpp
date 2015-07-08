@@ -87,17 +87,15 @@ namespace detail {
 }
 
 template <bitter::bit_order BO, typename UL, bitter::byte_order YO>
-bit_iterator<BO, UL, YO> copy(bitter::const_bit_iterator<BO, UL, YO> it,
-                              bitter::const_bit_iterator<BO, UL, YO> end,
-                              bitter::bit_iterator<BO, UL, YO> out)
+bit_iterator<BO, UL, YO>
+copy_shifting(bitter::const_bit_iterator<BO, UL, YO> it,
+              bitter::const_bit_iterator<BO, UL, YO> end,
+              bitter::bit_iterator<BO, UL, YO> out)
 {
     if (it == end)
         return out;
-    if (it.bitno == out.bitno)
-        return std::copy(it, end, out);
 
     using shiftrep = detail::shiftable<BO,UL,YO>;
-
     constexpr std::uint8_t element_bits = sizeof(UL) * 8;
 
     const std::uint8_t lshift =
@@ -135,6 +133,36 @@ bit_iterator<BO, UL, YO> copy(bitter::const_bit_iterator<BO, UL, YO> it,
     mask &= shiftrep(-1) << ((element_bits - ret.bitno) % element_bits);
     *out.data = (*out.data & ~mask) | (buf & mask);
     return ret;
+}
+
+template <bitter::bit_order BO, typename UL, bitter::byte_order YO>
+bit_iterator<BO, UL, YO> copy(bitter::const_bit_iterator<BO, UL, YO> it,
+                              bitter::const_bit_iterator<BO, UL, YO> end,
+                              bitter::bit_iterator<BO, UL, YO> out)
+{
+    if (it.bitno != out.bitno)
+        return copy_shifting(it, end, out);
+    if (it == end)
+        return out;
+
+    using shiftrep = detail::shiftable<BO,UL,YO>;
+    constexpr std::uint8_t element_bits = sizeof(UL) * 8;
+
+    UL mask = shiftrep(-1);
+    if (it.bitno) {
+        mask = shiftrep(-1) >> out.bitno;
+        if (it.data != end.data) {
+            *out.data = (*out.data & ~mask) | (*it.data++ & mask);
+            ++out.data;
+            mask = shiftrep(-1);
+        }
+    }
+    out.data = std::copy(it.data, end.data, out.data);
+    if (end.bitno) {
+        mask &= shiftrep(-1) << (element_bits - end.bitno);
+        *out.data = (*out.data & ~mask) | (*end.data & mask);
+    }
+    return end - it + out;
 }
 
 template <bitter::bit_order BO, typename UL, bitter::byte_order YO>

@@ -165,12 +165,13 @@ bit_iterator<BO, UL, YO> copy(bitter::const_bit_iterator<BO, UL, YO> it,
     return end - it + out;
 }
 
-template <bitter::bit_order BO, typename UL, bitter::byte_order YO>
-bit_iterator<BO, UL, YO> copy(bitter::bit_iterator<BO, UL, YO> it,
-                              bitter::bit_iterator<BO, UL, YO> end,
-                              bitter::bit_iterator<BO, UL, YO> out)
+template <bitter::bit_order BOI, typename ULI, bitter::byte_order YOI,
+          bitter::bit_order BOO, typename ULO, bitter::byte_order YOO>
+bit_iterator<BOO, ULO, YOO> copy(bitter::bit_iterator<BOI, ULI, YOI> it,
+                                 bitter::bit_iterator<BOI, ULI, YOI> end,
+                                 bitter::bit_iterator<BOO, ULO, YOO> out)
 {
-    using cit = bitter::const_bit_iterator<BO, UL, YO>;
+    using cit = bitter::const_bit_iterator<BOI, ULI, YOI>;
     return copy(cit{it}, cit{end}, out);
 }
 

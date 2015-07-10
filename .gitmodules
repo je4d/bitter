@@ -3,4 +3,4 @@
 	url = https://github.com/joakimkarlsson/bandit.git
 [submodule "modules/jake"]
 	path = modules/jake
-	url = /home/jeff/dev/jake
+	url = https://github.com/je4d/jake.git

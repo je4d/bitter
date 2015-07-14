@@ -27,9 +27,9 @@ namespace detail {
     }
 
     /*
-     * Struct that wraps a UL and provides shift operators that shift it as if it's
-     * a string of bits, i.e. << removes bits from the start of the message, >>
-     * adds 0 bits to the start of the message
+     * Struct that wraps a UL and provides shift operators that shift it as if
+     * it's a string of bits, i.e. << removes bits from the start of the
+     * message, >> adds 0 bits to the start of the message
      */
     template <bit_order BO, typename UL, byte_order YO>
     struct shiftable
@@ -86,11 +86,11 @@ namespace detail {
     };
 }
 
-template <bitter::bit_order BO, typename UL, bitter::byte_order YO>
+template <bit_order BO, typename UL, byte_order YO>
 bit_iterator<BO, UL, YO>
-copy_shifting(bitter::const_bit_iterator<BO, UL, YO> it,
-              bitter::const_bit_iterator<BO, UL, YO> end,
-              bitter::bit_iterator<BO, UL, YO> out)
+copy_shifting(const_bit_iterator<BO, UL, YO> it,
+              const_bit_iterator<BO, UL, YO> end,
+              bit_iterator<BO, UL, YO> out)
 {
     if (it == end)
         return out;
@@ -135,10 +135,10 @@ copy_shifting(bitter::const_bit_iterator<BO, UL, YO> it,
     return ret;
 }
 
-template <bitter::bit_order BO, typename UL, bitter::byte_order YO>
-bit_iterator<BO, UL, YO> copy(bitter::const_bit_iterator<BO, UL, YO> it,
-                              bitter::const_bit_iterator<BO, UL, YO> end,
-                              bitter::bit_iterator<BO, UL, YO> out)
+template <bit_order BO, typename UL, byte_order YO>
+bit_iterator<BO, UL, YO> copy(const_bit_iterator<BO, UL, YO> it,
+                              const_bit_iterator<BO, UL, YO> end,
+                              bit_iterator<BO, UL, YO> out)
 {
     if (it.bitno != out.bitno)
         return copy_shifting(it, end, out);
@@ -165,13 +165,13 @@ bit_iterator<BO, UL, YO> copy(bitter::const_bit_iterator<BO, UL, YO> it,
     return end - it + out;
 }
 
-template <bitter::bit_order BOI, typename ULI, bitter::byte_order YOI,
-          bitter::bit_order BOO, typename ULO, bitter::byte_order YOO>
-bit_iterator<BOO, ULO, YOO> copy(bitter::bit_iterator<BOI, ULI, YOI> it,
-                                 bitter::bit_iterator<BOI, ULI, YOI> end,
-                                 bitter::bit_iterator<BOO, ULO, YOO> out)
+template <bit_order BOI, typename ULI, byte_order YOI,
+          bit_order BOO, typename ULO, byte_order YOO>
+bit_iterator<BOO, ULO, YOO> copy(bit_iterator<BOI, ULI, YOI> it,
+                                 bit_iterator<BOI, ULI, YOI> end,
+                                 bit_iterator<BOO, ULO, YOO> out)
 {
-    using cit = bitter::const_bit_iterator<BOI, ULI, YOI>;
+    using cit = const_bit_iterator<BOI, ULI, YOI>;
     return copy(cit{it}, cit{end}, out);
 }
 
